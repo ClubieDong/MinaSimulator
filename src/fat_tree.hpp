@@ -121,6 +121,8 @@ private:
     }
 
 public:
+    using AggrTree = std::pair<std::vector<const Node *>, std::vector<const Edge *>>;
+
     const std::array<unsigned int, Height> DownLinkCount;
     const std::array<unsigned int, Height> UpLinkCount;
     const std::vector<Node> Nodes;
@@ -186,8 +188,7 @@ public:
         return ancestors;
     }
 
-    std::pair<std::vector<const Node *>, std::vector<const Edge *>>
-    GetAggregationTree(const std::vector<const Node *> &leaves, const Node *root) const {
+    AggrTree GetAggregationTree(const std::vector<const Node *> &leaves, const Node *root) const {
         assert(leaves.size() > 0);
         std::unordered_set<const Node *> nodes(leaves.cbegin(), leaves.cend());
         std::vector<const Edge *> edges;
