@@ -1,14 +1,12 @@
-#include "fat_tree.hpp"
 #include "job_allocator.hpp"
 #include <fstream>
 #include <iostream>
 #include <nlohmann/json.hpp>
-#include <queue>
-#include <random>
 
 template <unsigned int Height, typename NHostSampleFunc, typename DurationSampleFunc>
-double Simulate(JobAllocator<3> &&jobAllocator, unsigned int nJobs, JobAllocator<3>::AllocMethod method,
-                NHostSampleFunc &&nHostSampleFunc, DurationSampleFunc &&durationSampleFunc) {
+double Simulate(JobAllocator<Height> &&jobAllocator, unsigned int nJobs,
+                typename JobAllocator<Height>::AllocMethod method, NHostSampleFunc &&nHostSampleFunc,
+                DurationSampleFunc &&durationSampleFunc) {
     std::priority_queue<std::pair<float, unsigned int>, std::vector<std::pair<float, unsigned int>>,
                         std::greater<std::pair<float, unsigned int>>>
         jobQueue;
@@ -19,10 +17,10 @@ double Simulate(JobAllocator<3> &&jobAllocator, unsigned int nJobs, JobAllocator
     while (true) {
         while (true) {
             auto [res, jobId] = jobAllocator.Allocate(nHosts, method);
-            if (res == JobAllocator<3>::AllocRes::Fail)
+            if (res == JobAllocator<Height>::AllocRes::Fail)
                 break;
             jobQueue.push({now + duration, jobId});
-            if (res == JobAllocator<3>::AllocRes::Sharp)
+            if (res == JobAllocator<Height>::AllocRes::Sharp)
                 sharpGpuTime += nHosts * duration;
             totalGpuTime += nHosts * duration;
             ++nAllocatedJobs;
@@ -48,8 +46,10 @@ int main() {
     std::uniform_int_distribution<std::size_t> durationRandom(0, durationTrace.size() - 1);
     auto nHostSampleFunc = [&] { return nHostsTrace[nHostsRandom(engine)]; };
     auto durationSampleFunc = [&] { return durationTrace[durationRandom(engine)]; };
-    auto result = Simulate<3>(JobAllocator(FatTree<3>(16), std::nullopt, 1), 10000, &JobAllocator<3>::AllocateRandom,
-                              std::move(nHostSampleFunc), std::move(durationSampleFunc));
+    FatTree<3> topology(16);
+    JobAllocator jobAllocator(topology, std::nullopt, 1);
+    auto result = Simulate(std::move(jobAllocator), 10000, &JobAllocator<3>::AllocateRandom, std::move(nHostSampleFunc),
+                           std::move(durationSampleFunc));
     std::cout << result << '\n';
     return 0;
 }
