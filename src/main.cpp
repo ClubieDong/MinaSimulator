@@ -1,13 +1,38 @@
-#include "job_allocator.hpp"
+#include "allocation_methods/host_tree.hpp"
+#include "allocation_methods/hosts/first.hpp"
+#include "allocation_methods/hosts/random.hpp"
+#include "allocation_methods/trees/first.hpp"
+#include "allocation_methods/trees/random.hpp"
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <nlohmann/json.hpp>
 
-template <unsigned int Height, typename NHostSampleFunc, typename DurationSampleFunc>
-double Simulate(JobAllocator<Height> &&jobAllocator, unsigned int nJobs,
-                typename JobAllocator<Height>::AllocHostMethod allocHostMethod,
-                typename JobAllocator<Height>::AllocTreeMethod allocTreeMethod, NHostSampleFunc &&nHostSampleFunc,
-                DurationSampleFunc &&durationSampleFunc) {
+using AllocatorFunc = std::function<std::pair<AllocRes, std::optional<FatTree<3>::AggrTree>>(unsigned int)>;
+using AllocatorCreator = std::function<AllocatorFunc(const FatTreeResource<3> &)>;
+
+std::array<std::pair<const char *, AllocatorCreator>, 4> Allocators = {
+    std::pair("Random hosts + random tree",
+              [](const FatTreeResource<3> &resources) {
+                  return HostTreeAllocator(resources, RandomHostsAllocator(resources), RandomTreeAllocator(resources));
+              }),
+    std::pair("Random hosts + first tree",
+              [](const FatTreeResource<3> &resources) {
+                  return HostTreeAllocator(resources, RandomHostsAllocator(resources), FirstTreeAllocator(resources));
+              }),
+    std::pair("First hosts + random tree",
+              [](const FatTreeResource<3> &resources) {
+                  return HostTreeAllocator(resources, FirstHostsAllocator(resources), RandomTreeAllocator(resources));
+              }),
+    std::pair("First hosts + first tree",
+              [](const FatTreeResource<3> &resources) {
+                  return HostTreeAllocator(resources, FirstHostsAllocator(resources), FirstTreeAllocator(resources));
+              }),
+};
+
+template <unsigned int Height, typename Allocator, typename NHostSampleFunc, typename DurationSampleFunc>
+double Simulate(FatTreeResource<Height> &resources, unsigned int nJobs, Allocator &allocator,
+                NHostSampleFunc &nHostSampleFunc, DurationSampleFunc &durationSampleFunc) {
     std::priority_queue<std::pair<float, unsigned int>, std::vector<std::pair<float, unsigned int>>,
                         std::greater<std::pair<float, unsigned int>>>
         jobQueue;
@@ -17,12 +42,12 @@ double Simulate(JobAllocator<Height> &&jobAllocator, unsigned int nJobs,
     auto duration = durationSampleFunc();
     while (true) {
         while (true) {
-            auto [res, tree] = jobAllocator.TryAllocateHostsAndTree(nHosts, allocHostMethod, allocTreeMethod);
-            if (res == JobAllocator<Height>::AllocRes::Fail)
+            auto [res, tree] = allocator(nHosts);
+            if (res == AllocRes::Fail)
                 break;
-            jobAllocator.DoAllocate(nAllocatedJobs, std::move(*tree));
+            resources.Allocate(nAllocatedJobs, std::move(*tree));
             jobQueue.push({now + duration, nAllocatedJobs});
-            if (res == JobAllocator<Height>::AllocRes::Sharp)
+            if (res == AllocRes::Sharp)
                 sharpGpuTime += nHosts * duration;
             totalGpuTime += nHosts * duration;
             ++nAllocatedJobs;
@@ -33,7 +58,7 @@ double Simulate(JobAllocator<Height> &&jobAllocator, unsigned int nJobs,
         }
         assert(!jobQueue.empty());
         now = jobQueue.top().first;
-        jobAllocator.DoDeallocate(jobQueue.top().second);
+        resources.Deallocate(jobQueue.top().second);
         jobQueue.pop();
     }
 }
@@ -49,11 +74,11 @@ int main() {
     auto nHostSampleFunc = [&] { return nHostsTrace[nHostsRandom(engine)]; };
     auto durationSampleFunc = [&] { return durationTrace[durationRandom(engine)]; };
     FatTree<3> topology(16);
-    for (auto [allocHostMethodName, allocHostMethod] : JobAllocator<3>::AllocHostMethods)
-        for (auto [allocTreeMethodName, allocTreeMethod] : JobAllocator<3>::AllocTreeMethods) {
-            auto result = Simulate(JobAllocator(topology, std::nullopt, 1), 10000, allocHostMethod, allocTreeMethod,
-                                   std::move(nHostSampleFunc), std::move(durationSampleFunc));
-            std::cout << allocHostMethodName << " + " << allocTreeMethodName << ": " << result << '\n';
-        }
+    for (auto [name, allocatorCreator] : Allocators) {
+        FatTreeResource resources(topology, std::nullopt, 1);
+        auto allocator = allocatorCreator(resources);
+        auto result = Simulate(resources, 10000, allocator, nHostSampleFunc, durationSampleFunc);
+        std::cout << name << ": " << result << '\n';
+    }
     return 0;
 }
