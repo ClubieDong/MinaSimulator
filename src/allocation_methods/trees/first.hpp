@@ -15,7 +15,7 @@ public:
     explicit FirstTreeAllocator(const FatTreeResource<Height> &resources)
         : Topology(resources.Topology), Resources(&resources) {}
 
-    std::optional<AggrTree> operator()(const std::vector<const Node *> &chosenHosts) {
+    std::optional<AggrTree> operator()(const std::vector<const Node *> &chosenHosts) const {
         for (auto root : Topology->GetClosestCommonAncestors(chosenHosts)) {
             auto tree = Topology->GetAggregationTree(chosenHosts, root);
             if (!Resources->CheckTreeConflict(tree))

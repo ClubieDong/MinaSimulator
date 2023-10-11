@@ -15,7 +15,7 @@ public:
     explicit RandomTreeAllocator(const FatTreeResource<Height> &resources)
         : Topology(resources.Topology), Resources(&resources) {}
 
-    std::optional<AggrTree> operator()(const std::vector<const Node *> &chosenHosts) {
+    std::optional<AggrTree> operator()(const std::vector<const Node *> &chosenHosts) const {
         std::vector<AggrTree> trees;
         for (auto root : Topology->GetClosestCommonAncestors(chosenHosts)) {
             auto tree = Topology->GetAggregationTree(chosenHosts, root);

@@ -14,15 +14,15 @@ public:
     explicit FirstHostsAllocator(const FatTreeResource<Height> &resources)
         : Topology(resources.Topology), Resources(&resources) {}
 
-    std::optional<std::vector<const Node *>> operator()(unsigned int nHosts) {
-        assert(nHosts > 0);
+    std::optional<std::vector<const Node *>> operator()(unsigned int nRequiredHosts) const {
+        assert(nRequiredHosts > 0);
         const auto &nodeUsage = Resources->GetNodeUsage();
         const auto &hosts = Topology->NodesByLayer[0];
         std::vector<const Node *> availableHosts;
         for (unsigned int hostId = 0; hostId < hosts.size(); ++hostId)
             if (nodeUsage[hostId] == 0) {
                 availableHosts.push_back(hosts[hostId]);
-                if (availableHosts.size() == nHosts)
+                if (availableHosts.size() == nRequiredHosts)
                     return availableHosts;
             }
         return std::nullopt;

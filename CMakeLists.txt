@@ -2,9 +2,7 @@ cmake_minimum_required(VERSION 3.15)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_C_STANDARD 17)
-set(CMAKE_C_STANDARD_REQUIRED ON)
-project(mina_sim LANGUAGES CXX C)
+project(mina_sim LANGUAGES CXX)
 
 # ========== Enable link time optimization if supported ==========
 include(CheckIPOSupported)
