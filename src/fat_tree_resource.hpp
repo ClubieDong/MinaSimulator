@@ -1,6 +1,7 @@
 #pragma once
 
 #include "fat_tree.hpp"
+#include <iostream>
 #include <optional>
 #include <random>
 #include <unordered_map>
@@ -28,9 +29,9 @@ public:
         assert(!LinkQuota || *LinkQuota > 0);
     }
 
-    const std::vector<unsigned int> GetNodeUsage() const { return m_NodeUsage; }
-    const std::vector<unsigned int> GetEdgeUsage() const { return m_EdgeUsage; }
-    const std::unordered_map<unsigned int, AggrTree> GetRunningJobs() const { return m_RunningJobs; }
+    const std::vector<unsigned int> &GetNodeUsage() const { return m_NodeUsage; }
+    const std::vector<unsigned int> &GetEdgeUsage() const { return m_EdgeUsage; }
+    const std::unordered_map<unsigned int, AggrTree> &GetRunningJobs() const { return m_RunningJobs; }
 
     void Allocate(unsigned int jobId, AggrTree &&tree) {
         assert(!CheckTreeConflict(tree));
@@ -68,5 +69,18 @@ public:
                 if (m_EdgeUsage[edge->ID] >= *LinkQuota)
                     return true;
         return false;
+    }
+
+    void PrintClusterStatus() const {
+        // Used togther with scripts/visualize_cluster_status.py
+        //   build/mina_sim | python scripts/visualize_cluster_status.py
+        std::vector<unsigned int> jobIds(Topology->NodesByLayer[0].size(), 0);
+        for (const auto &[jobId, job] : m_RunningJobs)
+            for (auto node : job.first)
+                if (node->Layer == 0)
+                    jobIds[node->ID] = jobId;
+        for (auto jobId : jobIds)
+            std::cout << jobId << ' ';
+        std::cout << '\n';
     }
 };

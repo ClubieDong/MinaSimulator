@@ -1,7 +1,6 @@
 #pragma once
 
 #include "fat_tree_resource.hpp"
-#include <iostream>
 
 template <unsigned int Height>
 class SmartHostsAllocator {
