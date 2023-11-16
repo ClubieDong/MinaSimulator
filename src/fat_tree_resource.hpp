@@ -15,7 +15,6 @@ private:
 
     std::vector<unsigned int> m_NodeUsage;
     std::vector<unsigned int> m_EdgeUsage;
-    std::unordered_map<unsigned int, AggrTree> m_RunningJobs;
 
 public:
     const FatTree<Height> *Topology;
@@ -31,22 +30,21 @@ public:
 
     const std::vector<unsigned int> &GetNodeUsage() const { return m_NodeUsage; }
     const std::vector<unsigned int> &GetEdgeUsage() const { return m_EdgeUsage; }
-    const std::unordered_map<unsigned int, AggrTree> &GetRunningJobs() const { return m_RunningJobs; }
 
-    void Allocate(unsigned int jobId, AggrTree &&tree) {
-        assert(!CheckTreeConflict(tree));
-        assert(m_RunningJobs.count(jobId) == 0);
+    void Allocate(const AggrTree &tree) {
         const auto &[nodes, edges] = tree;
-        for (auto node : nodes)
+        for (auto node : nodes) {
+            assert(!NodeQuota || m_NodeUsage[node->ID] < *NodeQuota)
             ++m_NodeUsage[node->ID];
-        for (auto edge : edges)
+        }
+        for (auto edge : edges) {
+            assert(!LinkQuota || m_EdgeUsage[edge->ID] < *LinkQuota)
             ++m_EdgeUsage[edge->ID];
-        m_RunningJobs.try_emplace(jobId, std::move(tree));
+        }
     }
 
-    void Deallocate(unsigned int jobId) {
-        assert(m_RunningJobs.count(jobId) != 0);
-        auto &[nodes, edges] = m_RunningJobs[jobId];
+    void Deallocate(const AggrTree &tree) {
+        const auto &[nodes, edges] = tree;
         for (auto node : nodes) {
             assert(m_NodeUsage[node->ID] > 0);
             --m_NodeUsage[node->ID];
@@ -55,7 +53,6 @@ public:
             assert(m_EdgeUsage[edge->ID] > 0);
             --m_EdgeUsage[edge->ID];
         }
-        m_RunningJobs.erase(jobId);
     }
 
     bool CheckTreeConflict(const AggrTree &tree) const {
@@ -69,18 +66,5 @@ public:
                 if (m_EdgeUsage[edge->ID] >= *LinkQuota)
                     return true;
         return false;
-    }
-
-    void PrintClusterStatus() const {
-        // Used togther with scripts/visualize_cluster_status.py
-        //   build/mina_sim | python scripts/visualize_cluster_status.py
-        std::vector<unsigned int> jobIds(Topology->NodesByLayer[0].size(), 0);
-        for (const auto &[jobId, job] : m_RunningJobs)
-            for (auto node : job.first)
-                if (node->Layer == 0)
-                    jobIds[node->ID] = jobId;
-        for (auto jobId : jobIds)
-            std::cout << jobId << ' ';
-        std::cout << '\n';
     }
 };
