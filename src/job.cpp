@@ -1,5 +1,5 @@
 #include "job.hpp"
-#include "trace.hpp"
+#include "utils/trace.hpp"
 #include <cassert>
 
 double Job::GetNextEvent(double now) const {
@@ -68,6 +68,10 @@ bool Job::RunNextEvent(double now) {
             ++m_CurrentOpIdx;
         }
         (m_IsUsingSharp ? m_JobDurationWithSharp : m_JobDurationWithoutSharp) += m_CurrentTransmissionDuration;
+        if (m_NextAggrTree) {
+            m_AggrTree = std::move(*m_NextAggrTree);
+            m_NextAggrTree = std::nullopt;
+        }
         m_AfterTransmissionCallback(*this, now);
         return false;
     }
@@ -83,6 +87,7 @@ bool Job::RunNextEvent(double now) {
         Trace::RecordEndWaiting(now, *this);
         m_WaitingUntilTime = 0.0;
     }
+    assert(!scheduleRes.UseSharp || m_AggrTree);
     m_IsRunning = true;
     m_IsUsingSharp = scheduleRes.UseSharp;
     m_TransmittingMessageSize = scheduleRes.MessageSize;
@@ -92,4 +97,17 @@ bool Job::RunNextEvent(double now) {
     m_CurrentTransmissionStartTime = now;
     Trace::RecordBeginTransmission(now, *this);
     return false;
+}
+
+void Job::SetHosts(decltype(m_Hosts) &&hosts) {
+    assert(m_Hosts.empty());
+    assert(hosts.size() == HostCount);
+    m_Hosts = hosts;
+}
+
+void Job::SetNextAggrTree(std::optional<FatTree::AggrTree> &&aggrTree) {
+    if (m_IsRunning && m_IsUsingSharp)
+        m_NextAggrTree = std::move(aggrTree);
+    else
+        m_AggrTree = std::move(aggrTree);
 }

@@ -1,6 +1,8 @@
 #pragma once
 
+#include "fat_tree.hpp"
 #include <functional>
+#include <optional>
 #include <vector>
 
 struct CommOp {
@@ -43,7 +45,7 @@ private:
     unsigned int m_CurrentOpIdx = 0;
     unsigned long long m_CurrentOpTransmittedMessageSize = 0;
     bool m_IsRunning = false;
-    double m_WaitingUntilTime = 0.0;
+    double m_WaitingUntilTime = -1.0;
     unsigned long long m_TransmittingMessageSize;
     double m_CurrentTransmissionDuration;
 
@@ -57,6 +59,10 @@ private:
     double m_JobFinishTime;
     double m_JobDurationWithSharp = 0.0;
     double m_JobDurationWithoutSharp = 0.0;
+
+    std::vector<const FatTree::Node *> m_Hosts;
+    std::optional<FatTree::AggrTree> m_AggrTree;
+    std::optional<std::optional<FatTree::AggrTree>> m_NextAggrTree;
 
 public:
     // Given CommOp type, message size, whether to use SHARP, and # of hosts, returns the duration of CommOp in seconds.
@@ -80,6 +86,7 @@ public:
     unsigned int GetCurrentOpIdx() const { return m_CurrentOpIdx; }
     unsigned long long GetCurrentOpTransmittedMessageSize() const { return m_CurrentOpTransmittedMessageSize; }
     unsigned long long GetTransmittingMessageSize() const { return m_TransmittingMessageSize; }
+    bool IsUsingSharp() const { return m_IsUsingSharp; }
     bool IsStarted() const { return m_IsStarted; }
     bool IsFinished() const { return m_IsFinished; }
     double GetJobStartTime() const { return m_JobStartTime; }
@@ -87,6 +94,11 @@ public:
     double GetJobDurationWithSharp() const { return m_JobDurationWithSharp; }
     double GetJobDurationWithoutSharp() const { return m_JobDurationWithoutSharp; }
     const CommOp &GetCurrentCommOp() const { return CommOpGroups[m_CurrentGroupIdx].CommOps[m_CurrentOpIdx]; }
+    const std::vector<const FatTree::Node *> &GetHosts() const { return m_Hosts; }
+    const std::optional<FatTree::AggrTree> &GetCurrentAggrTree() const { return m_AggrTree; }
+    const std::optional<FatTree::AggrTree> &GetNextAggrTree() const {
+        return m_NextAggrTree ? *m_NextAggrTree : m_AggrTree;
+    }
 
     void SetBeforeTransmissionCallback(const decltype(m_BeforeTransmissionCallback) &callback) {
         m_BeforeTransmissionCallback = callback;
@@ -94,4 +106,6 @@ public:
     void SetAfterTransmissionCallback(const decltype(m_AfterTransmissionCallback) &callback) {
         m_AfterTransmissionCallback = callback;
     }
+    void SetHosts(decltype(m_Hosts) &&hosts);
+    void SetNextAggrTree(std::optional<FatTree::AggrTree> &&aggrTree);
 };
