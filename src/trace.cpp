@@ -7,6 +7,8 @@ static nlohmann::json RecordedTraces;
 
 void Trace::RecordEvent(std::string &&name, const char *category, bool isBegin, unsigned int pid, unsigned int tid,
                         double time) {
+    if (!EnableRecording)
+        return;
     RecordedTraces.push_back({
         {"name", name},
         {"cat", category},
@@ -18,6 +20,8 @@ void Trace::RecordEvent(std::string &&name, const char *category, bool isBegin, 
 }
 
 void Trace::Flush(const char *fileName) {
+    if (!EnableRecording)
+        return;
     std::ofstream file(fileName);
     file << RecordedTraces.dump();
 }

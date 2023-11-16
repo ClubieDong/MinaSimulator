@@ -6,6 +6,8 @@ class Job;
 
 class Trace {
 public:
+    inline static bool EnableRecording = false;
+
     static void RecordEvent(std::string &&name, const char *category, bool isBegin, unsigned int pid, unsigned int tid,
                             double time);
     static void Flush(const char *fileName);

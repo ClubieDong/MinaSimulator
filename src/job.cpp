@@ -2,7 +2,7 @@
 #include "trace.hpp"
 #include <cassert>
 
-double Job::GetNextEventTime(double now) const {
+double Job::GetNextEvent(double now) const {
     if (!m_IsStarted)
         return now;
     assert(!m_IsFinished);

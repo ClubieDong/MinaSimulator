@@ -33,8 +33,10 @@ class Job {
 private:
     inline static unsigned int m_NextID = 0;
 
+    // Given the job and the current time, returns CommOpScheduleResult.
     std::function<CommOpScheduleResult(const Job &, double)> m_BeforeTransmissionCallback;
-    std::function<void(const Job &, double)> m_AfterTransmissionCallback;
+    // Given the job and the current time, returns nothing.
+    std::function<void(const Job &, double)> m_AfterTransmissionCallback = [](const Job &, double) {};
 
     unsigned int m_CurrentStepIdx = 0;
     unsigned int m_CurrentGroupIdx = 0;
@@ -69,7 +71,7 @@ public:
         : ID(m_NextID++), HostCount(hostCount), StepCount(stepCount), CommOpGroups(std::move(commOpGroups)) {}
 
     // Returns the time of the next event.
-    double GetNextEventTime(double now) const;
+    double GetNextEvent(double now) const;
     // Returns whether the job is finished.
     bool RunNextEvent(double now);
 
@@ -84,6 +86,7 @@ public:
     double GetJobFinishTime() const { return m_JobFinishTime; }
     double GetJobDurationWithSharp() const { return m_JobDurationWithSharp; }
     double GetJobDurationWithoutSharp() const { return m_JobDurationWithoutSharp; }
+    const CommOp &GetCurrentCommOp() const { return CommOpGroups[m_CurrentGroupIdx].CommOps[m_CurrentOpIdx]; }
 
     void SetBeforeTransmissionCallback(const decltype(m_BeforeTransmissionCallback) &callback) {
         m_BeforeTransmissionCallback = callback;
