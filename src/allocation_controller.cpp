@@ -21,21 +21,22 @@ void AllocationController::BuildSharingGroups() {
         std::vector<Job *> jobs;
         for (auto i : group)
             jobs.push_back(m_RunningJobs[i].get());
-        m_SharingGroups.emplace_back(std::move(jobs), m_SharingPolicy);
-        m_SharingGroups.back().SetBeforeTransmissionCallback([this](const Job &job, double, bool useSharp) {
+        auto sharingGroup = std::make_unique<SharingGroup>(std::move(jobs), &m_Resources, m_SharingPolicy);
+        sharingGroup->SetBeforeTransmissionCallback([this](const Job &job, double, bool useSharp) {
             if (useSharp) {
                 const auto &aggrTree = job.GetCurrentAggrTree();
                 assert(aggrTree);
                 m_Resources.Allocate(*aggrTree);
             }
         });
-        m_SharingGroups.back().SetAfterTransmissionCallback([this](const Job &job, double, bool useSharp) {
+        sharingGroup->SetAfterTransmissionCallback([this](const Job &job, double, bool useSharp) {
             if (useSharp) {
                 const auto &aggrTree = job.GetCurrentAggrTree();
                 assert(aggrTree);
-                m_Resources.Allocate(*aggrTree);
+                m_Resources.Deallocate(*aggrTree);
             }
         });
+        m_SharingGroups.push_back(std::move(sharingGroup));
     }
 }
 
@@ -62,11 +63,11 @@ std::tuple<double, Job *, SharingGroup *> AllocationController::GetNextEvent(dou
     Job *nearestJob = nullptr;
     SharingGroup *nearestSharingGroup = nullptr;
     for (auto &sharingGroup : m_SharingGroups) {
-        auto [nextEventTime, nextJob] = sharingGroup.GetNextEvent(now);
+        auto [nextEventTime, nextJob] = sharingGroup->GetNextEvent(now);
         if (!nearestJob || nextEventTime < nearestEventTime) {
             nearestEventTime = nextEventTime;
             nearestJob = nextJob;
-            nearestSharingGroup = &sharingGroup;
+            nearestSharingGroup = sharingGroup.get();
         }
     }
     assert(nearestJob);

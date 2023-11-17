@@ -1,11 +1,14 @@
 #pragma once
 
+#include "fat_tree_resource.hpp"
 #include "job.hpp"
 #include <functional>
 #include <vector>
 
 class SharingGroup {
 private:
+    FatTreeResource *m_Resources;
+
     // Given the job, the current time, and whether to use SHARP, returns nothing.
     std::function<void(const Job &, double, bool)> m_BeforeTransmissionCallback = [](const Job &, double, bool) {};
     // Given the job, the current time, and whether to use SHARP, returns nothing.
@@ -16,12 +19,15 @@ private:
 public:
     const std::vector<Job *> Jobs;
 
-    explicit SharingGroup(std::vector<Job *> &&jobs, const decltype(m_SharingPolicy) &sharingPolicy);
+    explicit SharingGroup(std::vector<Job *> &&jobs, FatTreeResource *resources,
+                          const decltype(m_SharingPolicy) &sharingPolicy);
 
     // Returns the time of the next event and the job that will run next.
     std::pair<double, Job *> GetNextEvent(double now) const;
     // Returns whether the job is finished.
     bool RunNextEvent(double now, Job *job) { return job->RunNextEvent(now); }
+
+    FatTreeResource *GetFatTreeResources() const { return m_Resources; }
 
     void SetBeforeTransmissionCallback(const decltype(m_BeforeTransmissionCallback) &callback) {
         m_BeforeTransmissionCallback = callback;

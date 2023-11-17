@@ -5,7 +5,7 @@
 #include <optional>
 #include <vector>
 
-class FirstHostAllocationPolicy {
+class RandomHostAllocationPolicy {
 private:
     using Node = typename FatTree::Node;
 

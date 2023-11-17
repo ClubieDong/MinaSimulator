@@ -25,7 +25,7 @@ private:
 
     FatTreeResource m_Resources;
     std::vector<std::unique_ptr<Job>> m_RunningJobs;
-    std::vector<SharingGroup> m_SharingGroups;
+    std::vector<std::unique_ptr<SharingGroup>> m_SharingGroups;
     std::unique_ptr<Job> m_NextJob;
 
     void BuildSharingGroups();

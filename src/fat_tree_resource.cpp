@@ -56,9 +56,12 @@ void FatTreeResource::Deallocate(const std::vector<const Node *> &hosts) {
 bool FatTreeResource::CheckTreeConflict(const AggrTree &tree) const {
     const auto &[nodes, edges] = tree;
     if (NodeQuota)
-        for (auto node : nodes)
+        for (auto node : nodes) {
+            if (node->Layer == 0)
+                continue;
             if (m_NodeUsage[node->ID] >= *NodeQuota)
                 return true;
+        }
     if (LinkQuota)
         for (auto edge : edges)
             if (m_EdgeUsage[edge->ID] >= *LinkQuota)

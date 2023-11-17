@@ -6,7 +6,7 @@ FirstHostAllocationPolicy::operator()(const FatTreeResource &resources, unsigned
     assert(hostCount > 0);
     const auto &nodeUsage = resources.GetNodeUsage();
     const auto &hosts = resources.Topology->NodesByLayer[0];
-    std::vector<const FatTree::Node *> availableHosts;
+    std::vector<const Node *> availableHosts;
     for (unsigned int hostId = 0; hostId < hosts.size(); ++hostId)
         if (nodeUsage[hostId] == 0) {
             availableHosts.push_back(hosts[hostId]);

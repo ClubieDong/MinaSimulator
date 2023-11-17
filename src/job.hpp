@@ -13,6 +13,9 @@ struct CommOp {
     double StartTimeInGroup;
     unsigned long long MessageSize; // In Byte
     Type OpType;
+
+    explicit CommOp(double startTimeInGroup, unsigned long long messageSize, Type opType)
+        : StartTimeInGroup(startTimeInGroup), MessageSize(messageSize), OpType(opType) {}
 };
 
 struct CommOpGroup {
