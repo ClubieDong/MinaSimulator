@@ -28,5 +28,5 @@ public:
     void Deallocate(const AggrTree &tree);
     void Deallocate(const std::vector<const Node *> &hosts);
     bool CheckTreeConflict(const AggrTree &tree) const;
-    static bool CheckTreeConflict(const AggrTree &tree1, const AggrTree &tree2);
+    bool CheckTreeConflict(const AggrTree &tree1, const AggrTree &tree2) const;
 };

@@ -20,7 +20,7 @@ private:
 public:
     const double Alpha;
 
-    explicit SmartHostAllocationPolicy(double alpha) : Alpha(alpha) {}
+    explicit SmartHostAllocationPolicy(double alpha = 0.5) : Alpha(alpha) {}
 
     std::optional<std::vector<const FatTree::Node *>> operator()(const FatTreeResource &resources,
                                                                  unsigned int hostCount) const;

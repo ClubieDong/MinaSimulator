@@ -3,7 +3,7 @@
 #include "job.hpp"
 #include "sharing_group.hpp"
 
-class SmartSharpSharingPolicy {
+class SmartSharingPolicy {
 public:
     CommOpScheduleResult operator()(const SharingGroup &sharingGroup, const Job &job, double now) const;
 };

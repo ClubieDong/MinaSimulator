@@ -9,7 +9,6 @@
 #include "tree_building_policies/random.hpp"
 #include "tree_building_policies/smart.hpp"
 #include "utils/trace.hpp"
-#include <cassert>
 #include <random>
 
 int main() {
@@ -22,7 +21,7 @@ int main() {
     };
 
     FatTree topology(4);
-    FatTreeResource resources(topology, 1, 1);
+    FatTreeResource resources(topology, std::nullopt, 1);
 
     auto getNextJob = []() -> std::unique_ptr<Job> {
         static unsigned int count = 0;
@@ -42,9 +41,10 @@ int main() {
         auto stepCount = stepCountList[randomStepCount(engine)];
         return std::make_unique<Job>(hostCount, stepCount, std::move(groups));
     };
-    FirstHostAllocationPolicy hostAllocationPolicy;
-    FirstTreeBuildingPolicy treeBuildingPolicy;
-    SmartSharpSharingPolicy sharingPolicy;
+
+    SmartHostAllocationPolicy hostAllocationPolicy;
+    SmartTreeBuildingPolicy treeBuildingPolicy;
+    SmartSharingPolicy sharingPolicy;
 
     AllocationController controller(std::move(resources), std::move(getNextJob), std::move(hostAllocationPolicy),
                                     std::move(treeBuildingPolicy), std::move(sharingPolicy));

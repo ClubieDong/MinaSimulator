@@ -1,7 +1,7 @@
 #include "greedy.hpp"
 #include <cassert>
 
-CommOpScheduleResult GreedySharpSharingPolicy::operator()(const SharingGroup &sharingGroup, const Job &job,
+CommOpScheduleResult GreedySharingPolicy::operator()(const SharingGroup &sharingGroup, const Job &job,
                                                           double) const {
     assert(!job.IsFinished());
     assert(!job.IsRunning());

@@ -2,7 +2,7 @@
 #include "utils/trace.hpp"
 #include <cassert>
 
-CommOpScheduleResult SmartSharpSharingPolicy::operator()(const SharingGroup &sharingGroup, const Job &job,
+CommOpScheduleResult SmartSharingPolicy::operator()(const SharingGroup &sharingGroup, const Job &job,
                                                          double now) const {
     if (!sharingGroup.CanUseSharp(job))
         return CommOpScheduleResult(false);

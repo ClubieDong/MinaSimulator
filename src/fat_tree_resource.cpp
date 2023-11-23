@@ -69,17 +69,19 @@ bool FatTreeResource::CheckTreeConflict(const AggrTree &tree) const {
     return false;
 }
 
-bool FatTreeResource::CheckTreeConflict(const AggrTree &tree1, const AggrTree &tree2) {
+bool FatTreeResource::CheckTreeConflict(const AggrTree &tree1, const AggrTree &tree2) const {
     // TODO: Optimize
     const auto &[nodes1, edges1] = tree1;
     const auto &[nodes2, edges2] = tree2;
-    for (auto node1 : nodes1)
-        for (auto node2 : nodes2)
-            if (node1 == node2)
-                return true;
-    for (auto edge1 : edges1)
-        for (auto edge2 : edges2)
-            if (edge1 == edge2)
-                return true;
+    if (NodeQuota && *NodeQuota < 2)
+        for (auto node1 : nodes1)
+            for (auto node2 : nodes2)
+                if (node1 == node2)
+                    return true;
+    if (LinkQuota && *LinkQuota < 2)
+        for (auto edge1 : edges1)
+            for (auto edge2 : edges2)
+                if (edge1 == edge2)
+                    return true;
     return false;
 }

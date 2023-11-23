@@ -12,7 +12,7 @@ void AllocationController::BuildSharingGroups() {
             const auto &aggrTree2 = m_RunningJobs[j]->GetNextAggrTree();
             if (!aggrTree2)
                 continue;
-            if (FatTreeResource::CheckTreeConflict(*aggrTree1, *aggrTree2))
+            if (m_Resources.CheckTreeConflict(*aggrTree1, *aggrTree2))
                 u.Union(i, j);
         }
     }
