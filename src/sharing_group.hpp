@@ -27,6 +27,8 @@ public:
     // Returns whether the job is finished.
     bool RunNextEvent(double now, Job *job) { return job->RunNextEvent(now); }
 
+    bool CanUseSharp(const Job &job) const;
+
     FatTreeResource *GetFatTreeResources() const { return m_Resources; }
 
     void SetBeforeTransmissionCallback(const decltype(m_BeforeTransmissionCallback) &callback) {

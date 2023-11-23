@@ -18,7 +18,8 @@ std::ostream &operator<<(std::ostream &os, const FatTree::Edge &edge) {
 }
 
 static std::array<unsigned int, FatTree::Height> CreateDownLinkCountFromDegree(unsigned int degree) {
-    assert(degree >= 2 && degree % 2 == 0);
+    assert(degree >= 2);
+    assert(degree % 2 == 0);
     std::array<unsigned int, FatTree::Height> downLinkCount;
     downLinkCount.fill(degree / 2);
     downLinkCount[FatTree::Height - 1] = degree;
@@ -26,7 +27,8 @@ static std::array<unsigned int, FatTree::Height> CreateDownLinkCountFromDegree(u
 }
 
 static std::array<unsigned int, FatTree::Height> CreateUpLinkCountFromDegree(unsigned int degree) {
-    assert(degree >= 2 && degree % 2 == 0);
+    assert(degree >= 2);
+    assert(degree % 2 == 0);
     std::array<unsigned int, FatTree::Height> upLinkCount;
     upLinkCount.fill(degree / 2);
     upLinkCount[0] = 1;

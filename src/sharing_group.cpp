@@ -30,3 +30,13 @@ std::pair<double, Job *> SharingGroup::GetNextEvent(double now) const {
     assert(nearestJob);
     return {nearestEventTime, nearestJob};
 }
+
+bool SharingGroup::CanUseSharp(const Job &job) const {
+    assert(!job.IsFinished());
+    assert(!job.IsRunning());
+    for (auto j : Jobs)
+        if (j->IsRunning() && j->IsUsingSharp())
+            return false;
+    const auto &aggrTree = job.GetCurrentAggrTree();
+    return aggrTree && !m_Resources->CheckTreeConflict(*aggrTree);
+}

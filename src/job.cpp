@@ -91,12 +91,70 @@ bool Job::RunNextEvent(double now) {
     m_IsRunning = true;
     m_IsUsingSharp = scheduleRes.UseSharp;
     m_TransmittingMessageSize = scheduleRes.MessageSize;
+    if (m_TransmittingMessageSize == -1ull)
+        m_TransmittingMessageSize = op.MessageSize - m_CurrentOpTransmittedMessageSize;
     assert(m_CurrentOpTransmittedMessageSize + m_TransmittingMessageSize <= op.MessageSize);
     m_CurrentTransmissionDuration =
         CalcTransmissionDuration(op.OpType, m_TransmittingMessageSize, m_IsUsingSharp, HostCount);
     m_CurrentTransmissionStartTime = now;
     Trace::RecordBeginTransmission(now, *this);
     return false;
+}
+
+std::optional<CommOpRunningInfo> Job::GetNextCommOpInfo(double now) const {
+    if (m_IsFinished)
+        return std::nullopt;
+    assert(m_CurrentStepIdx < StepCount);
+    assert(m_CurrentGroupIdx < CommOpGroups.size());
+    auto opTransmittedMessageSize = m_CurrentOpTransmittedMessageSize;
+    auto opIdx = m_CurrentOpIdx, groupIdx = m_CurrentGroupIdx;
+    auto groupStartTime = m_CurrentGroupStartTime;
+    if (m_IsRunning) {
+        now = m_CurrentTransmissionStartTime + m_CurrentTransmissionDuration;
+        const auto &opGroup = CommOpGroups[groupIdx];
+        assert(opIdx < opGroup.CommOps.size());
+        const auto &op = opGroup.CommOps[opIdx];
+        opTransmittedMessageSize += m_TransmittingMessageSize;
+        assert(opTransmittedMessageSize <= op.MessageSize);
+        if (opTransmittedMessageSize == op.MessageSize) {
+            opTransmittedMessageSize = 0;
+            ++opIdx;
+        }
+    }
+    if (opIdx >= CommOpGroups[groupIdx].CommOps.size()) {
+        now = std::max(now, groupStartTime + CommOpGroups[groupIdx].SyncTime);
+        opIdx = 0;
+        ++groupIdx;
+        if (groupIdx >= CommOpGroups.size()) {
+            groupIdx = 0;
+            if (m_CurrentStepIdx + 1 >= StepCount)
+                return std::nullopt;
+        }
+        groupStartTime = now;
+    }
+    const auto &op = CommOpGroups[groupIdx].CommOps[opIdx];
+    auto startTime = std::max(now, std::max(m_WaitingUntilTime, groupStartTime + op.StartTimeInGroup));
+    auto durationWithSharp =
+        CalcTransmissionDuration(op.OpType, op.MessageSize - opTransmittedMessageSize, true, HostCount);
+    auto durationWithoutSharp =
+        CalcTransmissionDuration(op.OpType, op.MessageSize - opTransmittedMessageSize, false, HostCount);
+    return CommOpRunningInfo{groupStartTime, startTime, durationWithSharp, durationWithoutSharp, groupIdx, opIdx};
+}
+
+double Job::GetNextCommOpPriority(const CommOpRunningInfo &commOpInfo) const {
+    auto calcGroupFinishTime = [this, &commOpInfo](bool useSharpOnNext, bool useSharpOnRest) -> double {
+        const auto &opGroup = CommOpGroups[commOpInfo.GroupIdx];
+        auto now =
+            commOpInfo.OpStartTime + (useSharpOnNext ? commOpInfo.DurationWithSharp : commOpInfo.DurationWithoutSharp);
+        for (unsigned int opIdx = commOpInfo.OpIdx + 1; opIdx < opGroup.CommOps.size(); ++opIdx) {
+            const auto &op = opGroup.CommOps[opIdx];
+            auto duration = CalcTransmissionDuration(op.OpType, op.MessageSize, useSharpOnRest, HostCount);
+            now = std::max(now, commOpInfo.GroupStartTime + op.StartTimeInGroup) + duration;
+        }
+        return std::max(now, commOpInfo.GroupStartTime + opGroup.SyncTime);
+    };
+    // TODO: should useSharpOnRest be true of false?
+    return calcGroupFinishTime(false, false) - calcGroupFinishTime(true, false);
 }
 
 void Job::SetHosts(decltype(m_Hosts) &&hosts) {

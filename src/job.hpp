@@ -30,8 +30,17 @@ struct CommOpScheduleResult {
     unsigned long long MessageSize;
 
     explicit CommOpScheduleResult(double waitingTime) : InsertWaitingTime(true), WaitingTime(waitingTime) {}
-    explicit CommOpScheduleResult(bool useSharp, unsigned long long messageSize)
+    explicit CommOpScheduleResult(bool useSharp, unsigned long long messageSize = -1ull)
         : InsertWaitingTime(false), UseSharp(useSharp), MessageSize(messageSize) {}
+};
+
+struct CommOpRunningInfo {
+    double GroupStartTime;
+    double OpStartTime;
+    double DurationWithSharp;
+    double DurationWithoutSharp;
+    unsigned int GroupIdx;
+    unsigned int OpIdx;
 };
 
 class Job {
@@ -84,11 +93,15 @@ public:
     // Returns whether the job is finished.
     bool RunNextEvent(double now);
 
+    std::optional<CommOpRunningInfo> GetNextCommOpInfo(double now) const;
+    double GetNextCommOpPriority(const CommOpRunningInfo &commOpInfo) const;
+
     unsigned int GetCurrentStepIdx() const { return m_CurrentStepIdx; }
     unsigned int GetCurrentGroupIdx() const { return m_CurrentGroupIdx; }
     unsigned int GetCurrentOpIdx() const { return m_CurrentOpIdx; }
     unsigned long long GetCurrentOpTransmittedMessageSize() const { return m_CurrentOpTransmittedMessageSize; }
     unsigned long long GetTransmittingMessageSize() const { return m_TransmittingMessageSize; }
+    bool IsRunning() const { return m_IsRunning; }
     bool IsUsingSharp() const { return m_IsUsingSharp; }
     bool IsStarted() const { return m_IsStarted; }
     bool IsFinished() const { return m_IsFinished; }
@@ -96,7 +109,6 @@ public:
     double GetJobFinishTime() const { return m_JobFinishTime; }
     double GetJobDurationWithSharp() const { return m_JobDurationWithSharp; }
     double GetJobDurationWithoutSharp() const { return m_JobDurationWithoutSharp; }
-    const CommOp &GetCurrentCommOp() const { return CommOpGroups[m_CurrentGroupIdx].CommOps[m_CurrentOpIdx]; }
     const std::vector<const FatTree::Node *> &GetHosts() const { return m_Hosts; }
     const std::optional<FatTree::AggrTree> &GetCurrentAggrTree() const { return m_AggrTree; }
     const std::optional<FatTree::AggrTree> &GetNextAggrTree() const {

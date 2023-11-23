@@ -5,7 +5,7 @@
 
 class NonSharpSharingPolicy {
 public:
-    CommOpScheduleResult operator()(const SharingGroup &, const Job &job, double) const {
-        return CommOpScheduleResult(false, job.GetCurrentCommOp().MessageSize);
+    CommOpScheduleResult operator()(const SharingGroup &, const Job &, double) const {
+        return CommOpScheduleResult(false);
     }
 };
