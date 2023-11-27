@@ -67,14 +67,16 @@ private:
 
     bool m_IsStarted = false;
     bool m_IsFinished = false;
-    double m_JobStartTime;
-    double m_JobFinishTime;
-    double m_JobDurationWithSharp = 0.0;
-    double m_JobDurationWithoutSharp = 0.0;
+    double m_StartTime;
+    double m_FinishTime;
+    double m_DurationWithSharp = 0.0;
+    double m_DurationWithoutSharp = 0.0;
 
     std::vector<const FatTree::Node *> m_Hosts;
     std::optional<FatTree::AggrTree> m_AggrTree;
     std::optional<std::optional<FatTree::AggrTree>> m_NextAggrTree;
+
+    double CalcJCT(bool useSharp) const;
 
 public:
     // Given CommOp type, message size, whether to use SHARP, and # of hosts, returns the duration of CommOp in seconds.
@@ -85,8 +87,10 @@ public:
     const unsigned int StepCount;
     const std::vector<CommOpGroup> CommOpGroups;
 
-    explicit Job(unsigned int hostCount, unsigned int stepCount, std::vector<CommOpGroup> &&commOpGroups)
-        : ID(m_NextID++), HostCount(hostCount), StepCount(stepCount), CommOpGroups(std::move(commOpGroups)) {}
+    double JCTWithSharp;
+    double JCTWithoutSharp;
+
+    explicit Job(unsigned int hostCount, unsigned int stepCount, std::vector<CommOpGroup> &&commOpGroups);
 
     // Returns the time of the next event.
     double GetNextEvent(double now) const;
@@ -105,10 +109,10 @@ public:
     bool IsUsingSharp() const { return m_IsUsingSharp; }
     bool IsStarted() const { return m_IsStarted; }
     bool IsFinished() const { return m_IsFinished; }
-    double GetJobStartTime() const { return m_JobStartTime; }
-    double GetJobFinishTime() const { return m_JobFinishTime; }
-    double GetJobDurationWithSharp() const { return m_JobDurationWithSharp; }
-    double GetJobDurationWithoutSharp() const { return m_JobDurationWithoutSharp; }
+    double GetStartTime() const { return m_StartTime; }
+    double GetFinishTime() const { return m_FinishTime; }
+    double GetDurationWithSharp() const { return m_DurationWithSharp; }
+    double GetDurationWithoutSharp() const { return m_DurationWithoutSharp; }
     const std::vector<const FatTree::Node *> &GetHosts() const { return m_Hosts; }
     const std::optional<FatTree::AggrTree> &GetCurrentAggrTree() const { return m_AggrTree; }
     const std::optional<FatTree::AggrTree> &GetNextAggrTree() const {

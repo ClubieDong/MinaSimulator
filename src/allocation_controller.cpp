@@ -82,8 +82,9 @@ AllocationController::AllocationController(FatTreeResource &&resources, decltype
       m_TreeBuildingPolicy(std::move(treeBuildingPolicy)), m_SharingPolicy(std::move(sharingPolicy)),
       m_Resources(std::move(resources)), m_NextJob(m_GetNextJob()) {}
 
-void AllocationController::RunSimulation() {
+SimulationResult AllocationController::RunSimulation() {
     RunNewJobs(false);
+    SimulationResult result;
     double now = 0.0;
     while (!m_RunningJobs.empty()) {
         auto [nextTime, job, sharingGroup] = GetNextEvent(now);
@@ -91,6 +92,10 @@ void AllocationController::RunSimulation() {
         now = nextTime;
         auto jobFinished = sharingGroup->RunNextEvent(now, job);
         if (jobFinished) {
+            result.TotalHostTime += (job->GetFinishTime() - job->GetStartTime()) * job->HostCount;
+            result.TotalJCT += job->GetFinishTime() - job->GetStartTime();
+            result.TotalJCTWithSharp += job->JCTWithSharp;
+            result.TotalJCTWithoutSharp += job->JCTWithoutSharp;
             m_Resources.Deallocate(job->GetHosts());
             for (auto iter = m_RunningJobs.cbegin(); iter != m_RunningJobs.cend(); ++iter)
                 if (iter->get() == job) {
@@ -100,4 +105,8 @@ void AllocationController::RunSimulation() {
             RunNewJobs(true);
         }
     }
+    result.SimulatedTime = now;
+    result.ClusterUtilization = result.TotalHostTime / (now * m_Resources.Topology->NodesByLayer[0].size());
+    result.JCTScore = (result.TotalJCT - result.TotalJCTWithoutSharp) / (result.TotalJCTWithSharp - result.TotalJCTWithoutSharp);
+    return result;
 }

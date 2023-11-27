@@ -2,6 +2,26 @@
 #include "utils/trace.hpp"
 #include <cassert>
 
+double Job::CalcJCT(bool useSharp) const {
+    double jct = 0.0;
+    for (const auto &opGroup : CommOpGroups) {
+        double groupDuration = 0.0;
+        for (const auto &op : opGroup.CommOps) {
+            auto opDuration = CalcTransmissionDuration(op.OpType, op.MessageSize, useSharp, HostCount);
+            groupDuration = std::max(groupDuration, op.StartTimeInGroup) + opDuration;
+        }
+        groupDuration = std::max(groupDuration, opGroup.SyncTime);
+        jct += groupDuration;
+    }
+    return jct * StepCount;
+}
+
+Job::Job(unsigned int hostCount, unsigned int stepCount, std::vector<CommOpGroup> &&commOpGroups)
+    : ID(m_NextID++), HostCount(hostCount), StepCount(stepCount), CommOpGroups(std::move(commOpGroups)) {
+    JCTWithSharp = CalcJCT(true);
+    JCTWithoutSharp = CalcJCT(false);
+}
+
 double Job::GetNextEvent(double now) const {
     if (!m_IsStarted)
         return now;
@@ -25,7 +45,7 @@ bool Job::RunNextEvent(double now) {
         Trace::RecordBeginStep(now, *this);
         Trace::RecordBeginGroup(now, *this);
         m_IsStarted = true;
-        m_JobStartTime = now;
+        m_StartTime = now;
         m_CurrentGroupStartTime = now;
         return false;
     }
@@ -46,7 +66,7 @@ bool Job::RunNextEvent(double now) {
             if (m_CurrentStepIdx >= StepCount) {
                 Trace::RecordEndJob(now, *this);
                 m_IsFinished = true;
-                m_JobFinishTime = now;
+                m_FinishTime = now;
                 return true;
             }
             Trace::RecordBeginStep(now, *this);
@@ -67,12 +87,12 @@ bool Job::RunNextEvent(double now) {
             m_CurrentOpTransmittedMessageSize = 0;
             ++m_CurrentOpIdx;
         }
-        (m_IsUsingSharp ? m_JobDurationWithSharp : m_JobDurationWithoutSharp) += m_CurrentTransmissionDuration;
+        (m_IsUsingSharp ? m_DurationWithSharp : m_DurationWithoutSharp) += m_CurrentTransmissionDuration;
+        m_AfterTransmissionCallback(*this, now);
         if (m_NextAggrTree) {
             m_AggrTree = std::move(*m_NextAggrTree);
             m_NextAggrTree = std::nullopt;
         }
-        m_AfterTransmissionCallback(*this, now);
         return false;
     }
     if (m_CurrentOpTransmittedMessageSize == 0 && now != m_WaitingUntilTime)

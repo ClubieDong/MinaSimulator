@@ -8,6 +8,17 @@
 #include <optional>
 #include <vector>
 
+struct SimulationResult {
+    double SimulatedTime;
+    double ClusterUtilization;
+    double JCTScore;
+
+    double TotalHostTime = 0.0;
+    double TotalJCT = 0.0;
+    double TotalJCTWithSharp = 0.0;
+    double TotalJCTWithoutSharp = 0.0;
+};
+
 class AllocationController {
 private:
     // Returns the next job if exists, nullptr if not.
@@ -39,5 +50,5 @@ public:
                                   decltype(m_TreeBuildingPolicy) &&treeBuildingPolicy,
                                   decltype(m_SharingPolicy) &&sharingPolicy);
 
-    void RunSimulation();
+    SimulationResult RunSimulation();
 };
