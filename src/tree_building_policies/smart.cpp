@@ -1,6 +1,7 @@
 #include "smart.hpp"
 #include "utils/graph.hpp"
 #include <cassert>
+#include <random>
 
 void SmartTreeBuildingPolicy::operator()(const FatTreeResource &resources,
                                          const std::vector<std::unique_ptr<Job>> &jobs,
@@ -10,7 +11,13 @@ void SmartTreeBuildingPolicy::operator()(const FatTreeResource &resources,
     std::vector<unsigned int> treeIdxToJobIdx;
     for (unsigned int jobIdx = 0; jobIdx < jobs.size(); ++jobIdx) {
         auto roots = resources.Topology->GetClosestCommonAncestors(jobs[jobIdx]->GetHosts());
-        for (auto root : roots) {
+        std::vector<const FatTree::Node *> chosenRoots;
+        if (MaxTreeCount && *MaxTreeCount < roots.size()) {
+            thread_local std::default_random_engine engine(std::random_device{}());
+            std::sample(roots.cbegin(), roots.cend(), std::back_inserter(chosenRoots), *MaxTreeCount, engine);
+        } else
+            chosenRoots = roots;
+        for (auto root : chosenRoots) {
             aggrTrees.push_back(resources.Topology->GetAggregationTree(jobs[jobIdx]->GetHosts(), root));
             treeIdxToJobIdx.push_back(jobIdx);
         }

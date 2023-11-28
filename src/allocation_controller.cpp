@@ -1,6 +1,8 @@
 #include "allocation_controller.hpp"
 #include "utils/union_find.hpp"
 #include <cassert>
+#include <iomanip>
+#include <iostream>
 
 void AllocationController::BuildSharingGroups() {
     UnionFind u(m_RunningJobs.size());
@@ -74,6 +76,22 @@ std::tuple<double, Job *, SharingGroup *> AllocationController::GetNextEvent(dou
     return {nearestEventTime, nearestJob, nearestSharingGroup};
 }
 
+void AllocationController::ShowProgress(double now, bool last) {
+    if (m_LastShowProgressTime) {
+        if (!last && (now - *m_LastShowProgressTime) < m_MaxSimulationTime * 0.001)
+            return;
+        std::cout << '\r';
+    }
+    m_LastShowProgressTime = now;
+    std::cout << std::setprecision(6) << std::fixed;
+    std::cout << "Simulation progress: " << now << "s / " << m_MaxSimulationTime << "s (";
+    std::cout << std::setprecision(1) << std::fixed;
+    std::cout << (now / m_MaxSimulationTime * 100) << "%)";
+    if (last || now > m_MaxSimulationTime)
+        std::cout << '\n';
+    std::cout << std::flush;
+}
+
 AllocationController::AllocationController(FatTreeResource &&resources, decltype(m_GetNextJob) &&getNextJob,
                                            decltype(m_HostAllocationPolicy) &&hostAllocationPolicy,
                                            decltype(m_TreeBuildingPolicy) &&treeBuildingPolicy,
@@ -82,14 +100,19 @@ AllocationController::AllocationController(FatTreeResource &&resources, decltype
       m_TreeBuildingPolicy(std::move(treeBuildingPolicy)), m_SharingPolicy(std::move(sharingPolicy)),
       m_Resources(std::move(resources)), m_NextJob(m_GetNextJob()) {}
 
-SimulationResult AllocationController::RunSimulation() {
+SimulationResult AllocationController::RunSimulation(double maxSimulationTime, bool showProgress) {
+    m_MaxSimulationTime = maxSimulationTime;
     RunNewJobs(false);
     SimulationResult result;
     double now = 0.0;
-    while (!m_RunningJobs.empty()) {
+    if (showProgress)
+        ShowProgress(now, false);
+    while (!m_RunningJobs.empty() && now <= m_MaxSimulationTime) {
         auto [nextTime, job, sharingGroup] = GetNextEvent(now);
         assert(nextTime >= now);
         now = nextTime;
+        if (showProgress)
+            ShowProgress(now, false);
         auto jobFinished = sharingGroup->RunNextEvent(now, job);
         if (jobFinished) {
             result.TotalHostTime += (job->GetFinishTime() - job->GetStartTime()) * job->HostCount;
@@ -105,8 +128,13 @@ SimulationResult AllocationController::RunSimulation() {
             RunNewJobs(true);
         }
     }
+    if (showProgress)
+        ShowProgress(now, true);
+    for (const auto &job : m_RunningJobs)
+        result.TotalHostTime += (now - job->GetStartTime()) * job->HostCount;
     result.SimulatedTime = now;
     result.ClusterUtilization = result.TotalHostTime / (now * m_Resources.Topology->NodesByLayer[0].size());
-    result.JCTScore = (result.TotalJCT - result.TotalJCTWithoutSharp) / (result.TotalJCTWithSharp - result.TotalJCTWithoutSharp);
+    result.JCTScore =
+        (result.TotalJCT - result.TotalJCTWithoutSharp) / (result.TotalJCTWithSharp - result.TotalJCTWithoutSharp);
     return result;
 }

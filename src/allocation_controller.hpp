@@ -39,10 +39,14 @@ private:
     std::vector<std::unique_ptr<SharingGroup>> m_SharingGroups;
     std::unique_ptr<Job> m_NextJob;
 
+    double m_MaxSimulationTime;                   // In second
+    std::optional<double> m_LastShowProgressTime; // In second
+
     void BuildSharingGroups();
     void RunNewJobs(bool rebuildSharingGroups);
     // Returns the time of the next event, the job that will run next, and the sharing group of that job.
     std::tuple<double, Job *, SharingGroup *> GetNextEvent(double now);
+    void ShowProgress(double now, bool last);
 
 public:
     explicit AllocationController(FatTreeResource &&resources, decltype(m_GetNextJob) &&getNextJob,
@@ -50,5 +54,5 @@ public:
                                   decltype(m_TreeBuildingPolicy) &&treeBuildingPolicy,
                                   decltype(m_SharingPolicy) &&sharingPolicy);
 
-    SimulationResult RunSimulation();
+    SimulationResult RunSimulation(double maxSimulationTime, bool showProgress);
 };

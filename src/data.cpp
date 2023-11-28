@@ -7,7 +7,7 @@ double DurationCaculator::operator()(CommOp::Type opType, unsigned long long mes
     if (hostCount == 1)
         return Latency;
     auto bandwidth = Bandwidth * (useSharp && opType == CommOp::Type::AllReduce ? SharpAccRatio : 1);
-    return (Latency + messageSize / bandwidth) * 1'000'000;
+    return Latency + messageSize / bandwidth;
 }
 
 std::vector<CommOpGroup> ModelInfoProvider::GetModelInfo(const char *modelInfoPath) {
@@ -15,10 +15,10 @@ std::vector<CommOpGroup> ModelInfoProvider::GetModelInfo(const char *modelInfoPa
     auto modelInfo = nlohmann::json::parse(file);
     std::vector<CommOpGroup> result(1);
     auto &opGroup = result.front();
-    opGroup.SyncTime = modelInfo["duration"].get<double>() * 1'000'000;
+    opGroup.SyncTime = modelInfo["duration"];
     for (const auto &op : modelInfo["allreduces"]) {
-        auto start = op["start"].get<double>() * 1'000'000;
-        auto size = op["size"].get<unsigned long long>();
+        double start = op["start"];
+        unsigned long long size = op["size"];
         opGroup.CommOps.emplace_back(start, size, CommOp::Type::AllReduce);
     }
     return result;

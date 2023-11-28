@@ -15,7 +15,7 @@ void Trace::RecordEvent(std::string &&name, const char *category, bool isBegin, 
         {"ph", isBegin ? "B" : "E"},
         {"pid", pid},
         {"tid", tid},
-        {"ts", time},
+        {"ts", time * 1'000'000},
     });
 }
 
