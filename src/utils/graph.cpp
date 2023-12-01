@@ -57,7 +57,7 @@ std::unordered_set<unsigned int> Graph::CalcMaxIndependentSet() {
     inputFile.close();
     // Run MIS solver
     auto command = MisSolverPath + " " + MisInputPath + " --output=" + MisOutputPath +
-                   " --time_limit=1 --disable_checks > /dev/null";
+                   " --time_limit=" + std::to_string(MisSolverTimeLimit) + " --disable_checks > /dev/null";
     auto result = std::system(command.c_str());
     if (result != 0)
         throw std::runtime_error("MIS solver failed!");

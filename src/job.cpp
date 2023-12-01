@@ -2,8 +2,8 @@
 #include "utils/trace.hpp"
 #include <cassert>
 
-double Job::CalcJCT(bool useSharp) const {
-    double jct = 0.0;
+double Job::CalcStepDuration(bool useSharp) const {
+    double stepDuration = 0.0;
     for (const auto &opGroup : CommOpGroups) {
         double groupDuration = 0.0;
         for (const auto &op : opGroup.CommOps) {
@@ -11,22 +11,22 @@ double Job::CalcJCT(bool useSharp) const {
             groupDuration = std::max(groupDuration, op.StartTimeInGroup) + opDuration;
         }
         groupDuration = std::max(groupDuration, opGroup.SyncTime);
-        jct += groupDuration;
+        stepDuration += groupDuration;
     }
-    return jct * StepCount;
+    return stepDuration;
 }
 
-Job::Job(unsigned int hostCount, unsigned int stepCount, std::vector<CommOpGroup> &&commOpGroups)
+Job::Job(unsigned int hostCount, std::optional<unsigned int> stepCount, std::vector<CommOpGroup> &&commOpGroups)
     : ID(m_NextID++), HostCount(hostCount), StepCount(stepCount), CommOpGroups(std::move(commOpGroups)) {
-    JCTWithSharp = CalcJCT(true);
-    JCTWithoutSharp = CalcJCT(false);
+    StepDurationWithSharp = CalcStepDuration(true);
+    StepDurationWithoutSharp = CalcStepDuration(false);
 }
 
 double Job::GetNextEvent(double now) const {
     if (!m_IsStarted)
         return now;
     assert(!m_IsFinished);
-    assert(m_CurrentStepIdx < StepCount);
+    assert(!StepCount || m_CurrentStepIdx < *StepCount);
     assert(m_CurrentGroupIdx < CommOpGroups.size());
     const auto &opGroup = CommOpGroups[m_CurrentGroupIdx];
     if (m_CurrentOpIdx >= opGroup.CommOps.size()) {
@@ -50,7 +50,7 @@ bool Job::RunNextEvent(double now) {
         return false;
     }
     assert(!m_IsFinished);
-    assert(m_CurrentStepIdx < StepCount);
+    assert(!StepCount || m_CurrentStepIdx < *StepCount);
     assert(m_CurrentGroupIdx < CommOpGroups.size());
     const auto &opGroup = CommOpGroups[m_CurrentGroupIdx];
     if (m_CurrentOpIdx >= opGroup.CommOps.size()) {
@@ -63,7 +63,7 @@ bool Job::RunNextEvent(double now) {
             Trace::RecordEndStep(now, *this);
             m_CurrentGroupIdx = 0;
             ++m_CurrentStepIdx;
-            if (m_CurrentStepIdx >= StepCount) {
+            if (StepCount && m_CurrentStepIdx >= *StepCount) {
                 Trace::RecordEndJob(now, *this);
                 m_IsFinished = true;
                 m_FinishTime = now;
@@ -124,7 +124,7 @@ bool Job::RunNextEvent(double now) {
 std::optional<CommOpRunningInfo> Job::GetNextCommOpInfo(double now) const {
     if (m_IsFinished)
         return std::nullopt;
-    assert(m_CurrentStepIdx < StepCount);
+    assert(!StepCount || m_CurrentStepIdx < *StepCount);
     assert(m_CurrentGroupIdx < CommOpGroups.size());
     auto opTransmittedMessageSize = m_CurrentOpTransmittedMessageSize;
     auto opIdx = m_CurrentOpIdx, groupIdx = m_CurrentGroupIdx;
@@ -147,7 +147,7 @@ std::optional<CommOpRunningInfo> Job::GetNextCommOpInfo(double now) const {
         ++groupIdx;
         if (groupIdx >= CommOpGroups.size()) {
             groupIdx = 0;
-            if (m_CurrentStepIdx + 1 >= StepCount)
+            if (StepCount && m_CurrentStepIdx + 1 >= *StepCount)
                 return std::nullopt;
         }
         groupStartTime = now;
@@ -177,10 +177,10 @@ double Job::GetNextCommOpPriority(const CommOpRunningInfo &commOpInfo) const {
     return calcGroupFinishTime(false, false) - calcGroupFinishTime(true, false);
 }
 
-void Job::SetHosts(decltype(m_Hosts) &&hosts) {
+void Job::SetHosts(std::vector<const FatTree::Node *> &&hosts) {
     assert(m_Hosts.empty());
     assert(hosts.size() == HostCount);
-    m_Hosts = hosts;
+    m_Hosts = std::move(hosts);
 }
 
 void Job::SetNextAggrTree(std::optional<FatTree::AggrTree> &&aggrTree) {

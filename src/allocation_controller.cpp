@@ -77,37 +77,41 @@ std::tuple<double, Job *, SharingGroup *> AllocationController::GetNextEvent(dou
 }
 
 void AllocationController::ShowProgress(double now, bool last) {
+    auto realNow = std::chrono::high_resolution_clock::now();
     if (m_LastShowProgressTime) {
-        if (!last && (now - *m_LastShowProgressTime) < m_MaxSimulationTime * 0.001)
+        if (!last && (realNow - *m_LastShowProgressTime) < std::chrono::milliseconds(20))
             return;
         std::cout << '\r';
     }
-    m_LastShowProgressTime = now;
+    m_LastShowProgressTime = realNow;
     std::cout << std::setprecision(6) << std::fixed;
-    std::cout << "Simulation progress: " << now << "s / " << m_MaxSimulationTime << "s (";
-    std::cout << std::setprecision(1) << std::fixed;
-    std::cout << (now / m_MaxSimulationTime * 100) << "%)";
-    if (last || now > m_MaxSimulationTime)
+    std::cout << "Simulation progress: " << now << 's';
+    if (m_MaxSimulationTime) {
+        std::cout << " / " << *m_MaxSimulationTime << "s (";
+        std::cout << std::setprecision(1) << std::fixed;
+        std::cout << (now / *m_MaxSimulationTime * 100) << "%)";
+    }
+    if (last)
         std::cout << '\n';
     std::cout << std::flush;
 }
 
 AllocationController::AllocationController(FatTreeResource &&resources, decltype(m_GetNextJob) &&getNextJob,
-                                           decltype(m_HostAllocationPolicy) &&hostAllocationPolicy,
-                                           decltype(m_TreeBuildingPolicy) &&treeBuildingPolicy,
-                                           decltype(m_SharingPolicy) &&sharingPolicy)
+                                           HostAllocationPolicy &&hostAllocationPolicy,
+                                           TreeBuildingPolicy &&treeBuildingPolicy, SharingPolicy &&sharingPolicy)
     : m_GetNextJob(std::move(getNextJob)), m_HostAllocationPolicy(std::move(hostAllocationPolicy)),
       m_TreeBuildingPolicy(std::move(treeBuildingPolicy)), m_SharingPolicy(std::move(sharingPolicy)),
       m_Resources(std::move(resources)), m_NextJob(m_GetNextJob()) {}
 
-SimulationResult AllocationController::RunSimulation(double maxSimulationTime, bool showProgress) {
+SimulationResult AllocationController::RunSimulation(std::optional<double> maxSimulationTime, bool showProgress) {
     m_MaxSimulationTime = maxSimulationTime;
+    m_LastShowProgressTime = std::nullopt;
     RunNewJobs(false);
     SimulationResult result;
     double now = 0.0;
     if (showProgress)
         ShowProgress(now, false);
-    while (!m_RunningJobs.empty() && now <= m_MaxSimulationTime) {
+    while (!m_RunningJobs.empty() && (!m_MaxSimulationTime || now <= *m_MaxSimulationTime)) {
         auto [nextTime, job, sharingGroup] = GetNextEvent(now);
         assert(nextTime >= now);
         now = nextTime;
@@ -115,10 +119,11 @@ SimulationResult AllocationController::RunSimulation(double maxSimulationTime, b
             ShowProgress(now, false);
         auto jobFinished = sharingGroup->RunNextEvent(now, job);
         if (jobFinished) {
+            assert(job->StepCount);
             result.TotalHostTime += (job->GetFinishTime() - job->GetStartTime()) * job->HostCount;
             result.TotalJCT += job->GetFinishTime() - job->GetStartTime();
-            result.TotalJCTWithSharp += job->JCTWithSharp;
-            result.TotalJCTWithoutSharp += job->JCTWithoutSharp;
+            result.TotalJCTWithSharp += job->StepDurationWithSharp * *job->StepCount;
+            result.TotalJCTWithoutSharp += job->StepDurationWithoutSharp * *job->StepCount;
             m_Resources.Deallocate(job->GetHosts());
             for (auto iter = m_RunningJobs.cbegin(); iter != m_RunningJobs.cend(); ++iter)
                 if (iter->get() == job) {
@@ -130,8 +135,12 @@ SimulationResult AllocationController::RunSimulation(double maxSimulationTime, b
     }
     if (showProgress)
         ShowProgress(now, true);
-    for (const auto &job : m_RunningJobs)
+    for (const auto &job : m_RunningJobs) {
         result.TotalHostTime += (now - job->GetStartTime()) * job->HostCount;
+        result.TotalJCT += job->GetCurrentGroupStartTime() - job->GetStartTime();
+        result.TotalJCTWithSharp += job->StepDurationWithSharp * job->GetCurrentStepIdx();
+        result.TotalJCTWithoutSharp += job->StepDurationWithoutSharp * job->GetCurrentStepIdx();
+    }
     result.SimulatedTime = now;
     result.ClusterUtilization = result.TotalHostTime / (now * m_Resources.Topology->NodesByLayer[0].size());
     result.JCTScore =

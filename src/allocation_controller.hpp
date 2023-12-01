@@ -3,6 +3,7 @@
 #include "fat_tree_resource.hpp"
 #include "job.hpp"
 #include "sharing_group.hpp"
+#include <chrono>
 #include <functional>
 #include <memory>
 #include <optional>
@@ -20,27 +21,32 @@ struct SimulationResult {
 };
 
 class AllocationController {
+public:
+    using HostAllocationPolicy =
+        std::function<std::optional<std::vector<const FatTree::Node *>>(const FatTreeResource &, unsigned int)>;
+    using TreeBuildingPolicy = std::function<void(const FatTreeResource &, const std::vector<std::unique_ptr<Job>> &,
+                                                  const std::vector<Job *> &)>;
+    using SharingPolicy = std::function<CommOpScheduleResult(const SharingGroup &, const Job &, double)>;
+
 private:
     // Returns the next job if exists, nullptr if not.
     std::function<std::unique_ptr<Job>()> m_GetNextJob;
     // Given the resources and the number of required hosts, returns a vector of hosts if there are enough available
     // hosts, std::nullopt if not.
-    std::function<std::optional<std::vector<const FatTree::Node *>>(const FatTreeResource &, unsigned int)>
-        m_HostAllocationPolicy;
+    HostAllocationPolicy m_HostAllocationPolicy;
     // Given the resources, all the running jobs, and the new jobs, build the aggregation tree of each job. This
     // function should set the aggregation trees by calling Job::SetNextAggrTree.
-    std::function<void(const FatTreeResource &, const std::vector<std::unique_ptr<Job>> &, const std::vector<Job *> &)>
-        m_TreeBuildingPolicy;
+    TreeBuildingPolicy m_TreeBuildingPolicy;
     // Given the sharing group, the job, and the current time, returns CommOpScheduleResult.
-    std::function<CommOpScheduleResult(const SharingGroup &, const Job &, double)> m_SharingPolicy;
+    SharingPolicy m_SharingPolicy;
 
     FatTreeResource m_Resources;
     std::vector<std::unique_ptr<Job>> m_RunningJobs;
     std::vector<std::unique_ptr<SharingGroup>> m_SharingGroups;
     std::unique_ptr<Job> m_NextJob;
 
-    double m_MaxSimulationTime;                   // In second
-    std::optional<double> m_LastShowProgressTime; // In second
+    std::optional<double> m_MaxSimulationTime; // In second
+    std::optional<std::chrono::high_resolution_clock::time_point> m_LastShowProgressTime;
 
     void BuildSharingGroups();
     void RunNewJobs(bool rebuildSharingGroups);
@@ -50,9 +56,8 @@ private:
 
 public:
     explicit AllocationController(FatTreeResource &&resources, decltype(m_GetNextJob) &&getNextJob,
-                                  decltype(m_HostAllocationPolicy) &&hostAllocationPolicy,
-                                  decltype(m_TreeBuildingPolicy) &&treeBuildingPolicy,
-                                  decltype(m_SharingPolicy) &&sharingPolicy);
+                                  HostAllocationPolicy &&hostAllocationPolicy, TreeBuildingPolicy &&treeBuildingPolicy,
+                                  SharingPolicy &&sharingPolicy);
 
-    SimulationResult RunSimulation(double maxSimulationTime, bool showProgress);
+    SimulationResult RunSimulation(std::optional<double> maxSimulationTime, bool showProgress);
 };

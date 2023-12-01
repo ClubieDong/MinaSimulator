@@ -12,6 +12,8 @@ private:
     unsigned int SortAdjacencyList();
 
 public:
+    inline static double MisSolverTimeLimit = 1.0; // In second
+
     const unsigned int NodeCount;
 
     explicit Graph(unsigned int nodeCount)

@@ -37,7 +37,8 @@ static std::string GetEventNameFromJob(const Job &job, bool includeStep = false,
     if (includeCommOp)
         name += " CommOp #" + std::to_string(job.GetCurrentOpIdx());
     if (includeTransmission)
-        name += " Transmission(" + std::to_string(job.GetCurrentOpTransmittedMessageSize()) + "B~" +
+        name += (job.IsUsingSharp() ? " Transmission(SHARP, " : " Transmission(Non-SHARP, ") +
+                std::to_string(job.GetCurrentOpTransmittedMessageSize()) + "B~" +
                 std::to_string(job.GetCurrentOpTransmittedMessageSize() + job.GetTransmittingMessageSize()) + "B)";
     if (includeWaiting)
         name += " Waiting";
@@ -77,11 +78,13 @@ void Trace::RecordEndCommOp(double time, const Job &job) {
 }
 
 void Trace::RecordBeginTransmission(double time, const Job &job) {
-    RecordEvent(GetEventNameFromJob(job, true, true, true, true), "Transmission", true, 0, job.ID, time);
+    auto category = job.IsUsingSharp() ? "Transmission,SHARP" : "Transmission,NonSHARP";
+    RecordEvent(GetEventNameFromJob(job, true, true, true, true), category, true, 0, job.ID, time);
 }
 
 void Trace::RecordEndTransmission(double time, const Job &job) {
-    RecordEvent(GetEventNameFromJob(job, true, true, true, true), "Transmission", false, 0, job.ID, time);
+    auto category = job.IsUsingSharp() ? "Transmission,SHARP" : "Transmission,NonSHARP";
+    RecordEvent(GetEventNameFromJob(job, true, true, true, true), category, false, 0, job.ID, time);
 }
 
 void Trace::RecordBeginWaiting(double time, const Job &job) {

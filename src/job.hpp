@@ -76,7 +76,7 @@ private:
     std::optional<FatTree::AggrTree> m_AggrTree;
     std::optional<std::optional<FatTree::AggrTree>> m_NextAggrTree;
 
-    double CalcJCT(bool useSharp) const;
+    double CalcStepDuration(bool useSharp) const;
 
 public:
     // Given CommOp type, message size, whether to use SHARP, and # of hosts, returns the duration of CommOp in seconds.
@@ -84,13 +84,14 @@ public:
 
     const unsigned int ID;
     const unsigned int HostCount;
-    const unsigned int StepCount;
+    const std::optional<unsigned int> StepCount;
     const std::vector<CommOpGroup> CommOpGroups;
 
-    double JCTWithSharp;
-    double JCTWithoutSharp;
+    double StepDurationWithSharp;
+    double StepDurationWithoutSharp;
 
-    explicit Job(unsigned int hostCount, unsigned int stepCount, std::vector<CommOpGroup> &&commOpGroups);
+    explicit Job(unsigned int hostCount, std::optional<unsigned int> stepCount,
+                 std::vector<CommOpGroup> &&commOpGroups);
 
     // Returns the time of the next event.
     double GetNextEvent(double now) const;
@@ -105,6 +106,7 @@ public:
     unsigned int GetCurrentOpIdx() const { return m_CurrentOpIdx; }
     unsigned long long GetCurrentOpTransmittedMessageSize() const { return m_CurrentOpTransmittedMessageSize; }
     unsigned long long GetTransmittingMessageSize() const { return m_TransmittingMessageSize; }
+    double GetCurrentGroupStartTime() const { return m_CurrentGroupStartTime; }
     bool IsRunning() const { return m_IsRunning; }
     bool IsUsingSharp() const { return m_IsUsingSharp; }
     bool IsStarted() const { return m_IsStarted; }
@@ -125,6 +127,6 @@ public:
     void SetAfterTransmissionCallback(const decltype(m_AfterTransmissionCallback) &callback) {
         m_AfterTransmissionCallback = callback;
     }
-    void SetHosts(decltype(m_Hosts) &&hosts);
+    void SetHosts(std::vector<const FatTree::Node *> &&hosts);
     void SetNextAggrTree(std::optional<FatTree::AggrTree> &&aggrTree);
 };
