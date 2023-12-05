@@ -37,7 +37,6 @@ std::vector<const char *> modelList = {
 void LargeScaleSimulation(double bandwidth, double sharpAccRatio, bool useSmartHostAllocationPolicy,
                           bool useSmartTreeBuildingPolicy, bool useSmartSharingPolicy) {
     Trace::EnableRecording = false;
-    Graph::MisSolverTimeLimit = 1.0;
     Job::CalcTransmissionDuration = DurationCaculator(bandwidth, sharpAccRatio, 0.000'05);
     FatTree topology(16);
     FatTreeResource resources(topology, std::nullopt, 1);
