@@ -42,9 +42,9 @@ void AllocationController::BuildSharingGroups() {
     }
 }
 
-void AllocationController::RunNewJobs(bool rebuildSharingGroups) {
+void AllocationController::RunNewJobs(double now, bool rebuildSharingGroups) {
     std::vector<Job *> newJobs;
-    while (m_NextJob) {
+    while (m_NextJob && m_NextJobArrivingTime <= now) {
         auto hosts = m_HostAllocationPolicy(m_Resources, m_NextJob->HostCount);
         if (!hosts)
             break;
@@ -52,7 +52,7 @@ void AllocationController::RunNewJobs(bool rebuildSharingGroups) {
         m_NextJob->SetHosts(std::move(*hosts));
         newJobs.push_back(m_NextJob.get());
         m_RunningJobs.push_back(std::move(m_NextJob));
-        m_NextJob = m_GetNextJob();
+        std::tie(m_NextJob, m_NextJobArrivingTime) = m_GetNextJob();
     }
     if (!newJobs.empty())
         m_TreeBuildingPolicy(m_Resources, m_RunningJobs, newJobs);
@@ -101,19 +101,26 @@ AllocationController::AllocationController(FatTreeResource &&resources, decltype
                                            TreeBuildingPolicy &&treeBuildingPolicy, SharingPolicy &&sharingPolicy)
     : m_GetNextJob(std::move(getNextJob)), m_HostAllocationPolicy(std::move(hostAllocationPolicy)),
       m_TreeBuildingPolicy(std::move(treeBuildingPolicy)), m_SharingPolicy(std::move(sharingPolicy)),
-      m_Resources(std::move(resources)), m_NextJob(m_GetNextJob()) {}
+      m_Resources(std::move(resources)) {
+    std::tie(m_NextJob, m_NextJobArrivingTime) = m_GetNextJob();
+}
 
 SimulationResult AllocationController::RunSimulation(std::optional<double> maxSimulationTime, bool showProgress) {
     m_MaxSimulationTime = maxSimulationTime;
     m_LastShowProgressTime = std::nullopt;
-    RunNewJobs(false);
     SimulationResult result;
     double now = 0.0;
+    RunNewJobs(now, false);
     if (showProgress)
         ShowProgress(now, false);
     while (!m_RunningJobs.empty() && (!m_MaxSimulationTime || now <= *m_MaxSimulationTime)) {
         auto [nextTime, job, sharingGroup] = GetNextEvent(now);
         assert(nextTime >= now);
+        if (m_NextJob && now <= m_NextJobArrivingTime && m_NextJobArrivingTime < nextTime) {
+            now = m_NextJobArrivingTime;
+            RunNewJobs(now, true);
+            continue;
+        }
         now = nextTime;
         if (showProgress)
             ShowProgress(now, false);
@@ -130,7 +137,7 @@ SimulationResult AllocationController::RunSimulation(std::optional<double> maxSi
                     m_RunningJobs.erase(iter);
                     break;
                 }
-            RunNewJobs(true);
+            RunNewJobs(now, true);
         }
     }
     if (showProgress)

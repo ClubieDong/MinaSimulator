@@ -22,6 +22,9 @@ set(WARNING_OPTIONS
 )
 
 # ========== Third-party libraries ==========
+# pthread
+find_package(Threads REQUIRED)
+list(APPEND THRID_PARTY_LIBRARIES Threads::Threads)
 # nlohmann/json
 find_package(nlohmann_json CONFIG REQUIRED)
 list(APPEND THRID_PARTY_LIBRARIES nlohmann_json nlohmann_json::nlohmann_json)

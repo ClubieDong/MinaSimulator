@@ -1,4 +1,5 @@
 import json
+import math
 from matplotlib import pyplot as plt
 
 
@@ -12,8 +13,8 @@ model_list = data["model_list"]
 model_list = [x.split("/")[-1][:-5] for x in model_list]
 bandwidth = data["bandwidth"]
 sharp_acc_atio = data["sharp_acc_atio"]
-results = [data[x] for x in sharing_policy_list]
-average_score = data["average_score"]
+results = [[[x or math.nan for x in row] for row in data[name]] for name in sharing_policy_list]
+average_score = {name: value or math.nan for name, value in data["average_score"].items()}
 
 
 fig, axs = plt.subplots(1, len(sharing_policy_list), figsize=(len(sharing_policy_list)*5, 5))
