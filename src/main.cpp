@@ -10,6 +10,7 @@
 #include "tree_building_policies/random.hpp"
 #include "tree_building_policies/smart.hpp"
 #include "utils/graph.hpp"
+#include "utils/parallel.hpp"
 #include "utils/trace.hpp"
 #include <array>
 #include <cmath>
@@ -26,31 +27,32 @@
 #include <unordered_map>
 #include <vector>
 
-std::vector<const char *> allModelList = {
+static std::vector<const char *> allModelList = {
     "../data/opt-125m-4.json",    "../data/opt-125m-16.json", "../data/opt-350m-4.json",   "../data/opt-350m-16.json",
     "../data/opt-1.3b-4.json",    "../data/bert-base-4.json", "../data/bert-base-16.json", "../data/bert-large-4.json",
     "../data/bert-large-16.json", "../data/vit-base-4.json",  "../data/vit-base-16.json",  "../data/vit-large-4.json",
     "../data/vit-large-16.json",
 };
-std::vector<const char *> modelListBs4 = {
+static std::vector<const char *> modelListBs4 = {
     "../data/opt-125m-4.json",   "../data/opt-350m-4.json", "../data/opt-1.3b-4.json",  "../data/bert-base-4.json",
     "../data/bert-large-4.json", "../data/vit-base-4.json", "../data/vit-large-4.json",
 };
-std::vector<const char *> modelListBs16 = {
+static std::vector<const char *> modelListBs16 = {
     "../data/opt-125m-16.json",   "../data/opt-350m-16.json", "../data/bert-base-16.json",
     "../data/bert-large-16.json", "../data/vit-base-16.json", "../data/vit-large-16.json",
 };
 const auto &modelList = modelListBs4;
 
-void LargeScaleSimulation(double bandwidth, double sharpAccRatio, bool useSmartHostAllocationPolicy,
-                          bool useSmartTreeBuildingPolicy, bool useSmartSharingPolicy) {
+SimulationResult LargeScaleSimulation(double bandwidth, double sharpAccRatio, bool useSmartHostAllocationPolicy,
+                                      bool useSmartTreeBuildingPolicy, bool useSmartSharingPolicy) {
     Trace::EnableRecording = false;
     Job::CalcTransmissionDuration = DurationCaculator(bandwidth, sharpAccRatio, 0.000'05);
     FatTree topology(16);
     FatTreeResource resources(topology, std::nullopt, 1);
-    auto getNextJob = []() -> std::pair<std::unique_ptr<Job>, double> {
+    auto getNextJob = []() -> std::unique_ptr<Job> {
         thread_local std::default_random_engine engine(42);
-        thread_local std::vector<unsigned int> hostCountList = {2, 2, 2, 2, 3, 4, 4, 4, 4, 6, 8, 8};
+        thread_local std::vector<unsigned int> hostCountList = {1, 1, 1, 1, 1, 1, 1,  1,  2,  2,  2,  2,
+                                                                4, 4, 4, 4, 8, 8, 16, 16, 32, 32, 64, 64};
         thread_local std::vector<unsigned int> stepCountList = {10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
         std::uniform_int_distribution<std::size_t> randomModel(0, modelList.size() - 1);
         std::uniform_int_distribution<std::size_t> randomHostCount(0, hostCountList.size() - 1);
@@ -58,8 +60,7 @@ void LargeScaleSimulation(double bandwidth, double sharpAccRatio, bool useSmartH
         auto model = modelList[randomModel(engine)];
         auto hostCount = hostCountList[randomHostCount(engine)];
         auto stepCount = stepCountList[randomStepCount(engine)];
-        auto job = std::make_unique<Job>(hostCount, stepCount, ModelInfoProvider::GetModelInfo(model));
-        return {std::move(job), 0.0};
+        return std::make_unique<Job>(hostCount, stepCount, ModelInfoProvider::GetModelInfo(model, 1.0));
     };
     AllocationController::HostAllocationPolicy hostAllocationPolicy;
     AllocationController::TreeBuildingPolicy treeBuildingPolicy;
@@ -79,25 +80,7 @@ void LargeScaleSimulation(double bandwidth, double sharpAccRatio, bool useSmartH
     AllocationController controller(std::move(resources), std::move(getNextJob), std::move(hostAllocationPolicy),
                                     std::move(treeBuildingPolicy), std::move(sharingPolicy));
     std::optional<double> maxSimulationTime = 200.0;
-    auto result = controller.RunSimulation(maxSimulationTime, true);
-    {
-        static std::mutex mutex;
-        std::lock_guard<std::mutex> lock(mutex);
-        std::ofstream file("large_scale_result.txt", std::ios::app);
-        file << std::setprecision(1) << std::fixed;
-        file << "Simulation result of " << bandwidth / 1e9 << '/' << sharpAccRatio << '/'
-             << useSmartHostAllocationPolicy << '/' << useSmartTreeBuildingPolicy << '/' << useSmartSharingPolicy
-             << '\n';
-        file << std::setprecision(6) << std::fixed;
-        file << "    SimulatedTime: " << result.SimulatedTime << "s\n";
-        file << "    ClusterUtilization: " << result.ClusterUtilization * 100 << "%\n";
-        file << "    JCTScore: " << result.JCTScore << '\n';
-        file << "    TotalHostTime: " << result.TotalHostTime << "s\n";
-        file << "    TotalJCT: " << result.TotalJCT << "s\n";
-        file << "    TotalJCTWithSharp: " << result.TotalJCTWithSharp << "s\n";
-        file << "    TotalJCTWithoutSharp: " << result.TotalJCTWithoutSharp << "s\n";
-        file << '\n';
-    }
+    return controller.RunSimulation(maxSimulationTime, true);
 }
 
 void TestAccelerateEffectiveness() {
@@ -106,7 +89,7 @@ void TestAccelerateEffectiveness() {
     for (double bandwidth = 1e8; bandwidth <= 20e9; bandwidth += 1e8) {
         Job::CalcTransmissionDuration = DurationCaculator(bandwidth, 1.0, 0.0);
         for (auto model : modelList) {
-            Job job(2, 1, ModelInfoProvider::GetModelInfo(model));
+            Job job(2, 1, ModelInfoProvider::GetModelInfo(model, 1.0));
             result[model].emplace_back(bandwidth, job.StepDurationWithoutSharp);
         }
     }
@@ -115,7 +98,7 @@ void TestAccelerateEffectiveness() {
     file << jsonResult;
 }
 
-void TestSharingPolicy(double bandwidth, double sharpAccRatio, double job2Delay, const char *outputFileName) {
+void TestSharingPolicy(double bandwidth, double sharpAccRatio, double gpuSpeedupRatio, const char *outputFileName) {
     Trace::EnableRecording = false;
     Job::CalcTransmissionDuration = DurationCaculator(bandwidth, sharpAccRatio, 0.000'05);
     FatTree topology(4);
@@ -130,13 +113,13 @@ void TestSharingPolicy(double bandwidth, double sharpAccRatio, double job2Delay,
             for (auto &[sharingPolicyName, sharingPolicy] : sharingPolicyList) {
                 FatTreeResource resources(topology, 1, 1);
                 unsigned int jobCount = 0;
-                auto getNextJob = [model1, model2, job2Delay, &jobCount]() -> std::pair<std::unique_ptr<Job>, double> {
+                auto getNextJob = [=, &jobCount]() -> std::unique_ptr<Job> {
                     if (jobCount >= 2)
-                        return {nullptr, 0.0};
+                        return nullptr;
                     auto model = jobCount == 0 ? model1 : model2;
                     ++jobCount;
-                    auto job = std::make_unique<Job>(3, std::nullopt, ModelInfoProvider::GetModelInfo(model));
-                    return {std::move(job), jobCount == 2 ? job2Delay : 0.0};
+                    return std::make_unique<Job>(3, std::nullopt,
+                                                 ModelInfoProvider::GetModelInfo(model, gpuSpeedupRatio));
                 };
                 FirstHostAllocationPolicy hostAllocationPolicy;
                 FirstTreeBuildingPolicy treeBuildingPolicy;
@@ -160,7 +143,7 @@ void TestSharingPolicy(double bandwidth, double sharpAccRatio, double job2Delay,
         unsigned int jctScoreCount = 0;
         for (const auto &row : result)
             for (auto score : row)
-                if (!std::isnan(score)) {
+                if (!std::isnan(score) && !std::isinf(score)) {
                     jctScoreSum += score;
                     ++jctScoreCount;
                 }
@@ -178,13 +161,12 @@ void Test() {
     FatTree topology(4);
     FatTreeResource resources(topology, std::nullopt, 1);
     unsigned int jobCount = 0;
-    auto getNextJob = [&jobCount]() -> std::pair<std::unique_ptr<Job>, double> {
+    auto getNextJob = [&jobCount]() -> std::unique_ptr<Job> {
         if (jobCount >= 1)
-            return {nullptr, 0.0};
+            return nullptr;
         ++jobCount;
         auto model = "../data/opt-350m-16.json";
-        auto job = std::make_unique<Job>(2, 100, ModelInfoProvider::GetModelInfo(model));
-        return {std::move(job), 0.0};
+        return std::make_unique<Job>(2, 100, ModelInfoProvider::GetModelInfo(model, 1.0));
     };
     FirstHostAllocationPolicy hostAllocationPolicy;
     FirstTreeBuildingPolicy treeBuildingPolicy;
@@ -205,30 +187,34 @@ void Test() {
 }
 
 int main() {
-    // std::thread t000([] { LargeScaleSimulation(20'000'000'000, 1.5, false, false, false); });
-    // std::thread t001([] { LargeScaleSimulation(20'000'000'000, 1.5, false, false, true); });
-    // std::thread t010([] { LargeScaleSimulation(20'000'000'000, 1.5, false, true, false); });
-    // std::thread t011([] { LargeScaleSimulation(20'000'000'000, 1.5, false, true, true); });
-    // std::thread t100([] { LargeScaleSimulation(20'000'000'000, 1.5, true, false, false); });
-    // std::thread t101([] { LargeScaleSimulation(20'000'000'000, 1.5, true, false, true); });
-    // std::thread t110([] { LargeScaleSimulation(20'000'000'000, 1.5, true, true, false); });
-    // std::thread t111([] { LargeScaleSimulation(20'000'000'000, 1.5, true, true, true); });
-    // t000.join();
-    // t001.join();
-    // t010.join();
-    // t011.join();
-    // t100.join();
-    // t101.join();
-    // t110.join();
-    // t111.join();
+    auto results =
+        Parallel::Run<SimulationResult>([] { return LargeScaleSimulation(12'500'000'000, 2.0, false, false, false); },
+                                        [] { return LargeScaleSimulation(12'500'000'000, 2.0, false, false, true); },
+                                        [] { return LargeScaleSimulation(12'500'000'000, 2.0, false, true, false); },
+                                        [] { return LargeScaleSimulation(12'500'000'000, 2.0, false, true, true); },
+                                        [] { return LargeScaleSimulation(12'500'000'000, 2.0, true, false, false); },
+                                        [] { return LargeScaleSimulation(12'500'000'000, 2.0, true, false, true); },
+                                        [] { return LargeScaleSimulation(12'500'000'000, 2.0, true, true, false); },
+                                        [] { return LargeScaleSimulation(12'500'000'000, 2.0, true, true, true); });
+    nlohmann::json jsonResult;
+    for (auto result : results)
+        jsonResult.push_back({
+            {"SimulatedTime", result.SimulatedTime},
+            {"ClusterUtilization", result.ClusterUtilization},
+            {"JCTScore", result.JCTScore},
+            {"TotalHostTime", result.TotalHostTime},
+            {"TotalJCT", result.TotalJCT},
+            {"TotalJCTWithSharp", result.TotalJCTWithSharp},
+            {"TotalJCTWithoutSharp", result.TotalJCTWithoutSharp},
+        });
+    std::ofstream file("large_scale_result.json");
+    file << jsonResult;
 
-    TestSharingPolicy(2'000'000'000, 1.2, 0.0, "sharing_policy_2.0G_1.2.json");
-    TestSharingPolicy(3'000'000'000, 1.2, 0.0, "sharing_policy_3.0G_1.2.json");
-    TestSharingPolicy(4'000'000'000, 1.2, 0.0, "sharing_policy_4.0G_1.2.json");
-    TestSharingPolicy(5'000'000'000, 1.2, 0.0, "sharing_policy_5.0G_1.2.json");
-    TestSharingPolicy(2'000'000'000, 1.5, 0.0, "sharing_policy_2.0G_1.5.json");
-    TestSharingPolicy(3'000'000'000, 1.5, 0.0, "sharing_policy_3.0G_1.5.json");
-    TestSharingPolicy(4'000'000'000, 1.5, 0.0, "sharing_policy_4.0G_1.5.json");
-    TestSharingPolicy(5'000'000'000, 1.5, 0.0, "sharing_policy_5.0G_1.5.json");
+    // TestSharingPolicy(6'250'000'000, 1.2, 1.0, "sharing_policy_100Gbps_1.2.json");
+    // TestSharingPolicy(12'500'000'000, 1.2, 1.0, "sharing_policy_200Gbps_1.2.json");
+    // TestSharingPolicy(25'000'000'000, 1.2, 1.0, "sharing_policy_400Gbps_1.2.json");
+    // TestSharingPolicy(6'250'000'000, 1.5, 1.0, "sharing_policy_100Gbps_1.5.json");
+    // TestSharingPolicy(12'500'000'000, 1.5, 1.0, "sharing_policy_200Gbps_1.5.json");
+    // TestSharingPolicy(25'000'000'000, 1.5, 1.0, "sharing_policy_400Gbps_1.5.json");
     return 0;
 }

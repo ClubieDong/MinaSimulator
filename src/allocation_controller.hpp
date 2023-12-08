@@ -29,8 +29,8 @@ public:
     using SharingPolicy = std::function<CommOpScheduleResult(const SharingGroup &, const Job &, double)>;
 
 private:
-    // Returns the next job and its arriving time if exists, nullptr if not.
-    std::function<std::pair<std::unique_ptr<Job>, double>()> m_GetNextJob;
+    // Returns the next job if exists, nullptr if not.
+    std::function<std::unique_ptr<Job>()> m_GetNextJob;
     // Given the resources and the number of required hosts, returns a vector of hosts if there are enough available
     // hosts, std::nullopt if not.
     HostAllocationPolicy m_HostAllocationPolicy;
@@ -44,13 +44,12 @@ private:
     std::vector<std::unique_ptr<Job>> m_RunningJobs;
     std::vector<std::unique_ptr<SharingGroup>> m_SharingGroups;
     std::unique_ptr<Job> m_NextJob;
-    double m_NextJobArrivingTime;
 
     std::optional<double> m_MaxSimulationTime; // In second
     std::optional<std::chrono::high_resolution_clock::time_point> m_LastShowProgressTime;
 
     void BuildSharingGroups();
-    void RunNewJobs(double now, bool rebuildSharingGroups);
+    void RunNewJobs(bool rebuildSharingGroups);
     // Returns the time of the next event, the job that will run next, and the sharing group of that job.
     std::tuple<double, Job *, SharingGroup *> GetNextEvent(double now);
     void ShowProgress(double now, bool last);

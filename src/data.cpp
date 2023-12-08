@@ -10,14 +10,14 @@ double DurationCaculator::operator()(CommOp::Type opType, unsigned long long mes
     return Latency + messageSize / bandwidth;
 }
 
-std::vector<CommOpGroup> ModelInfoProvider::GetModelInfo(const char *modelInfoPath) {
+std::vector<CommOpGroup> ModelInfoProvider::GetModelInfo(const char *modelInfoPath, double gpuSpeedupRatio) {
     std::ifstream file(modelInfoPath);
     auto modelInfo = nlohmann::json::parse(file);
     std::vector<CommOpGroup> result(1);
     auto &opGroup = result.front();
-    opGroup.SyncTime = modelInfo["duration"];
+    opGroup.SyncTime = modelInfo["duration"].get<double>() / gpuSpeedupRatio;
     for (const auto &op : modelInfo["allreduces"]) {
-        double start = op["start"];
+        double start = op["start"].get<double>() / gpuSpeedupRatio;
         unsigned long long size = op["size"];
         opGroup.CommOps.emplace_back(start, size, CommOp::Type::AllReduce);
     }

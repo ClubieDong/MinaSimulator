@@ -17,5 +17,5 @@ public:
 
 class ModelInfoProvider {
 public:
-    static std::vector<CommOpGroup> GetModelInfo(const char *modelName);
+    static std::vector<CommOpGroup> GetModelInfo(const char *modelName, double gpuSpeedupRatio);
 };
