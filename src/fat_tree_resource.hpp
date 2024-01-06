@@ -13,6 +13,9 @@ private:
     std::vector<unsigned int> m_NodeUsage;
     std::vector<unsigned int> m_EdgeUsage;
 
+    unsigned int CalcHostFragments(bool available, unsigned int beginHostIdx, unsigned int hostCountInPod,
+                                   unsigned int level) const;
+
 public:
     const FatTree *Topology;
     const std::optional<unsigned int> NodeQuota, LinkQuota;
@@ -29,4 +32,6 @@ public:
     void Deallocate(const std::vector<const Node *> &hosts);
     bool CheckTreeConflict(const AggrTree &tree) const;
     bool CheckTreeConflict(const AggrTree &tree1, const AggrTree &tree2) const;
+
+    unsigned int CalcHostFragments(bool available) const;
 };

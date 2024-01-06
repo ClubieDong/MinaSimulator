@@ -1,8 +1,10 @@
 #include "allocation_controller.hpp"
 #include "utils/union_find.hpp"
 #include <cassert>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <nlohmann/json.hpp>
 
 void AllocationController::BuildSharingGroups() {
     UnionFind u(m_RunningJobs.size());
@@ -52,10 +54,19 @@ void AllocationController::RunNewJobs(bool rebuildSharingGroups) {
         m_NextJob->SetHosts(std::move(*hosts));
         newJobs.push_back(m_NextJob.get());
         m_RunningJobs.push_back(std::move(m_NextJob));
+        ++m_AllocatedJobCount;
         m_NextJob = m_GetNextJob();
     }
     if (!newJobs.empty())
         m_TreeBuildingPolicy(m_Resources, m_RunningJobs, newJobs);
+    if (RecordTreeConflicts) {
+        for (auto job : newJobs)
+            m_TreeConflictTrace.push_back(!job->GetNextAggrTree().has_value());
+        m_HostFragmentTrace[m_AllocatedJobCount] = {
+            m_Resources.CalcHostFragments(false),
+            m_Resources.CalcHostFragments(true),
+        };
+    }
     if (!newJobs.empty() || rebuildSharingGroups)
         BuildSharingGroups();
 }
@@ -102,6 +113,17 @@ AllocationController::AllocationController(FatTreeResource &&resources, decltype
     : m_GetNextJob(std::move(getNextJob)), m_HostAllocationPolicy(std::move(hostAllocationPolicy)),
       m_TreeBuildingPolicy(std::move(treeBuildingPolicy)), m_SharingPolicy(std::move(sharingPolicy)),
       m_Resources(std::move(resources)), m_NextJob(m_GetNextJob()) {}
+
+AllocationController::~AllocationController() {
+    if (!RecordTreeConflicts)
+        return;
+    nlohmann::json data = {
+        {"host_fragments", m_HostFragmentTrace},
+        {"tree_conflicts", m_TreeConflictTrace},
+    };
+    std::ofstream file("tree_conflict_trace.json");
+    file << data.dump();
+}
 
 SimulationResult AllocationController::RunSimulation(std::optional<double> maxSimulationTime, bool showProgress) {
     m_MaxSimulationTime = maxSimulationTime;

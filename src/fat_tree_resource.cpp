@@ -1,6 +1,28 @@
 #include "fat_tree_resource.hpp"
 #include <cassert>
 
+unsigned int FatTreeResource::CalcHostFragments(bool available, unsigned int beginHostIdx, unsigned int hostCountInPod,
+                                                unsigned int level) const {
+    const auto &hosts = Topology->NodesByLayer[0];
+    bool allAvailable = true, noneAvailable = true;
+    for (auto hostIdx = beginHostIdx; hostIdx < beginHostIdx + hostCountInPod; ++hostIdx)
+        if (m_NodeUsage[hosts[hostIdx]->ID] == 0)
+            noneAvailable = false;
+        else
+            allAvailable = false;
+    if (allAvailable)
+        return available;
+    if (noneAvailable)
+        return !available;
+    assert(level > 0);
+    assert(hostCountInPod > 1);
+    unsigned int sum = 0, hostCountInSubPod = hostCountInPod / Topology->DownLinkCount[level - 1];
+    for (unsigned int subPodBeginHostIdx = beginHostIdx; subPodBeginHostIdx < beginHostIdx + hostCountInPod;
+         subPodBeginHostIdx += hostCountInSubPod)
+        sum += CalcHostFragments(available, subPodBeginHostIdx, hostCountInSubPod, level - 1);
+    return sum;
+}
+
 FatTreeResource::FatTreeResource(const FatTree &topology, std::optional<unsigned int> nodeQuota,
                                  std::optional<unsigned int> linkQuota)
     : m_NodeUsage(topology.Nodes.size(), 0), m_EdgeUsage(topology.Edges.size(), 0), Topology(&topology),
@@ -84,4 +106,8 @@ bool FatTreeResource::CheckTreeConflict(const AggrTree &tree1, const AggrTree &t
                 if (edge1 == edge2)
                     return true;
     return false;
+}
+
+unsigned int FatTreeResource::CalcHostFragments(bool available) const {
+    return CalcHostFragments(available, 0, Topology->NodesByLayer[0].size(), Topology->Height);
 }

@@ -1,6 +1,6 @@
 #include "data.hpp"
-#include <nlohmann/json.hpp>
 #include <fstream>
+#include <nlohmann/json.hpp>
 
 double DurationCaculator::operator()(CommOp::Type opType, unsigned long long messageSize, bool useSharp,
                                      unsigned int hostCount) const {
@@ -11,8 +11,11 @@ double DurationCaculator::operator()(CommOp::Type opType, unsigned long long mes
 }
 
 std::vector<CommOpGroup> ModelInfoProvider::GetModelInfo(const char *modelInfoPath, double gpuSpeedupRatio) {
-    std::ifstream file(modelInfoPath);
-    auto modelInfo = nlohmann::json::parse(file);
+    if (m_ModelInfoCache.count(modelInfoPath) == 0) {
+        std::ifstream file(modelInfoPath);
+        m_ModelInfoCache[modelInfoPath] = nlohmann::json::parse(file);
+    }
+    const auto &modelInfo = m_ModelInfoCache[modelInfoPath];
     std::vector<CommOpGroup> result(1);
     auto &opGroup = result.front();
     opGroup.SyncTime = modelInfo["duration"].get<double>() / gpuSpeedupRatio;

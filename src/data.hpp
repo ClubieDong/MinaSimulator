@@ -1,6 +1,8 @@
 #pragma once
 
 #include "job.hpp"
+#include <nlohmann/json.hpp>
+#include <unordered_map>
 #include <vector>
 
 class DurationCaculator {
@@ -16,6 +18,9 @@ public:
 };
 
 class ModelInfoProvider {
+private:
+    inline static std::unordered_map<const char *, nlohmann::json> m_ModelInfoCache;
+
 public:
     static std::vector<CommOpGroup> GetModelInfo(const char *modelName, double gpuSpeedupRatio);
 };

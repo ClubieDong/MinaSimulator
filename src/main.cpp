@@ -45,7 +45,6 @@ const auto &modelList = modelListBs4;
 
 SimulationResult LargeScaleSimulation(double bandwidth, double sharpAccRatio, bool useSmartHostAllocationPolicy,
                                       bool useSmartTreeBuildingPolicy, bool useSmartSharingPolicy) {
-    Trace::EnableRecording = false;
     Job::CalcTransmissionDuration = DurationCaculator(bandwidth, sharpAccRatio, 0.000'05);
     FatTree topology(16);
     FatTreeResource resources(topology, std::nullopt, 1);
@@ -84,7 +83,6 @@ SimulationResult LargeScaleSimulation(double bandwidth, double sharpAccRatio, bo
 }
 
 void TestAccelerateEffectiveness() {
-    Trace::EnableRecording = false;
     std::unordered_map<std::string, std::vector<std::pair<double, double>>> result;
     for (double bandwidth = 1e8; bandwidth <= 20e9; bandwidth += 1e8) {
         Job::CalcTransmissionDuration = DurationCaculator(bandwidth, 1.0, 0.0);
@@ -99,7 +97,6 @@ void TestAccelerateEffectiveness() {
 }
 
 void TestSharingPolicy(double bandwidth, double sharpAccRatio, double gpuSpeedupRatio, const char *outputFileName) {
-    Trace::EnableRecording = false;
     Job::CalcTransmissionDuration = DurationCaculator(bandwidth, sharpAccRatio, 0.000'05);
     FatTree topology(4);
     std::unordered_map<std::string, std::vector<std::vector<double>>> resultMatMap;
@@ -155,60 +152,60 @@ void TestSharingPolicy(double bandwidth, double sharpAccRatio, double gpuSpeedup
     file << jsonResult;
 }
 
-void Test() {
-    Trace::EnableRecording = true;
+void TestTreeConflicts() {
     Job::CalcTransmissionDuration = DurationCaculator(2'000'000'000, 1.0, 0.000'05);
-    FatTree topology(4);
-    FatTreeResource resources(topology, std::nullopt, 1);
+    FatTree topology(16);
+    FatTreeResource resources(topology, 1, 1); // TODO
     unsigned int jobCount = 0;
     auto getNextJob = [&jobCount]() -> std::unique_ptr<Job> {
-        if (jobCount >= 1)
+        if (jobCount >= 20000)
             return nullptr;
         ++jobCount;
         auto model = "../data/opt-350m-16.json";
-        return std::make_unique<Job>(2, 100, ModelInfoProvider::GetModelInfo(model, 1.0));
+        thread_local std::default_random_engine engine(42);
+        thread_local std::vector<unsigned int> hostCountList = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+        thread_local std::vector<unsigned int> stepCountList = {10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
+        std::uniform_int_distribution<std::size_t> randomHostCount(0, hostCountList.size() - 1);
+        std::uniform_int_distribution<std::size_t> randomStepCount(0, stepCountList.size() - 1);
+        auto hostCount = hostCountList[randomHostCount(engine)];
+        auto stepCount = stepCountList[randomStepCount(engine)];
+        return std::make_unique<Job>(hostCount, stepCount, ModelInfoProvider::GetModelInfo(model, 1.0));
     };
     FirstHostAllocationPolicy hostAllocationPolicy;
     FirstTreeBuildingPolicy treeBuildingPolicy;
     GreedySharingPolicy sharingPolicy;
     AllocationController controller(std::move(resources), std::move(getNextJob), std::move(hostAllocationPolicy),
                                     std::move(treeBuildingPolicy), std::move(sharingPolicy));
-    std::optional<double> maxSimulationTime = std::nullopt;
-    auto result = controller.RunSimulation(maxSimulationTime, true);
-    std::cout << std::setprecision(6) << std::fixed;
-    std::cout << "SimulatedTime: " << result.SimulatedTime << "s\n";
-    std::cout << "ClusterUtilization: " << result.ClusterUtilization * 100 << "%\n";
-    std::cout << "JCTScore: " << result.JCTScore << '\n';
-    std::cout << "TotalHostTime: " << result.TotalHostTime << "s\n";
-    std::cout << "TotalJCT: " << result.TotalJCT << "s\n";
-    std::cout << "TotalJCTWithSharp: " << result.TotalJCTWithSharp << "s\n";
-    std::cout << "TotalJCTWithoutSharp: " << result.TotalJCTWithoutSharp << "s\n";
-    Trace::Flush("trace.json");
+    controller.RecordTreeConflicts = true;
+    controller.RunSimulation(std::nullopt, true);
 }
 
 int main() {
-    auto results =
-        Parallel::Run<SimulationResult>([] { return LargeScaleSimulation(12'500'000'000, 2.0, false, false, false); },
-                                        [] { return LargeScaleSimulation(12'500'000'000, 2.0, false, false, true); },
-                                        [] { return LargeScaleSimulation(12'500'000'000, 2.0, false, true, false); },
-                                        [] { return LargeScaleSimulation(12'500'000'000, 2.0, false, true, true); },
-                                        [] { return LargeScaleSimulation(12'500'000'000, 2.0, true, false, false); },
-                                        [] { return LargeScaleSimulation(12'500'000'000, 2.0, true, false, true); },
-                                        [] { return LargeScaleSimulation(12'500'000'000, 2.0, true, true, false); },
-                                        [] { return LargeScaleSimulation(12'500'000'000, 2.0, true, true, true); });
-    nlohmann::json jsonResult;
-    for (auto result : results)
-        jsonResult.push_back({
-            {"SimulatedTime", result.SimulatedTime},
-            {"ClusterUtilization", result.ClusterUtilization},
-            {"JCTScore", result.JCTScore},
-            {"TotalHostTime", result.TotalHostTime},
-            {"TotalJCT", result.TotalJCT},
-            {"TotalJCTWithSharp", result.TotalJCTWithSharp},
-            {"TotalJCTWithoutSharp", result.TotalJCTWithoutSharp},
-        });
-    std::ofstream file("large_scale_result.json");
-    file << jsonResult;
+    TestTreeConflicts();
+
+    // auto results =
+    //     Parallel::Run<SimulationResult>([] { return LargeScaleSimulation(12'500'000'000, 2.0, false, false, false);
+    //     },
+    //                                     [] { return LargeScaleSimulation(12'500'000'000, 2.0, false, false, true); },
+    //                                     [] { return LargeScaleSimulation(12'500'000'000, 2.0, false, true, false); },
+    //                                     [] { return LargeScaleSimulation(12'500'000'000, 2.0, false, true, true); },
+    //                                     [] { return LargeScaleSimulation(12'500'000'000, 2.0, true, false, false); },
+    //                                     [] { return LargeScaleSimulation(12'500'000'000, 2.0, true, false, true); },
+    //                                     [] { return LargeScaleSimulation(12'500'000'000, 2.0, true, true, false); },
+    //                                     [] { return LargeScaleSimulation(12'500'000'000, 2.0, true, true, true); });
+    // nlohmann::json jsonResult;
+    // for (auto result : results)
+    //     jsonResult.push_back({
+    //         {"SimulatedTime", result.SimulatedTime},
+    //         {"ClusterUtilization", result.ClusterUtilization},
+    //         {"JCTScore", result.JCTScore},
+    //         {"TotalHostTime", result.TotalHostTime},
+    //         {"TotalJCT", result.TotalJCT},
+    //         {"TotalJCTWithSharp", result.TotalJCTWithSharp},
+    //         {"TotalJCTWithoutSharp", result.TotalJCTWithoutSharp},
+    //     });
+    // std::ofstream file("large_scale_result.json");
+    // file << jsonResult;
 
     // TestSharingPolicy(6'250'000'000, 1.2, 1.0, "sharing_policy_100Gbps_1.2.json");
     // TestSharingPolicy(12'500'000'000, 1.2, 1.0, "sharing_policy_200Gbps_1.2.json");

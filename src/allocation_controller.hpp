@@ -7,6 +7,7 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <unordered_map>
 #include <vector>
 
 struct SimulationResult {
@@ -44,9 +45,13 @@ private:
     std::vector<std::unique_ptr<Job>> m_RunningJobs;
     std::vector<std::unique_ptr<SharingGroup>> m_SharingGroups;
     std::unique_ptr<Job> m_NextJob;
+    unsigned int m_AllocatedJobCount = 0;
 
     std::optional<double> m_MaxSimulationTime; // In second
     std::optional<std::chrono::high_resolution_clock::time_point> m_LastShowProgressTime;
+
+    std::unordered_map<unsigned int, std::pair<unsigned int, unsigned int>> m_HostFragmentTrace;
+    std::vector<bool> m_TreeConflictTrace;
 
     void BuildSharingGroups();
     void RunNewJobs(bool rebuildSharingGroups);
@@ -55,9 +60,12 @@ private:
     void ShowProgress(double now, bool last);
 
 public:
+    bool RecordTreeConflicts = false;
+
     explicit AllocationController(FatTreeResource &&resources, decltype(m_GetNextJob) &&getNextJob,
                                   HostAllocationPolicy &&hostAllocationPolicy, TreeBuildingPolicy &&treeBuildingPolicy,
                                   SharingPolicy &&sharingPolicy);
+    ~AllocationController();
 
     SimulationResult RunSimulation(std::optional<double> maxSimulationTime, bool showProgress);
 };
