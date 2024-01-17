@@ -6,9 +6,21 @@
 git submodule update --init
 ./vcpkg/bootstrap-vcpkg.sh
 ./vcpkg/vcpkg install nlohmann-json
+mkdir figures
+```
+
+## Build
+
+```
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release ..
+cmake --build . --parallel
 ```
 
 ## Experiments
+
+Before running experiments, make sure the working directory is `build`.
 
 ### TestLargeScaleSimulation
 
