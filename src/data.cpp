@@ -11,6 +11,7 @@ double DurationCaculator::operator()(CommOp::Type opType, unsigned long long mes
 }
 
 std::vector<CommOpGroup> ModelInfoProvider::GetModelInfo(const char *modelInfoPath, double gpuSpeedupRatio) {
+    std::scoped_lock lock(m_CacheMtx);
     if (m_ModelInfoCache.count(modelInfoPath) == 0) {
         std::ifstream file(modelInfoPath);
         m_ModelInfoCache[modelInfoPath] = nlohmann::json::parse(file);

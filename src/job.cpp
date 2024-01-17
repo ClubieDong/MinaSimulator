@@ -90,6 +90,8 @@ bool Job::RunNextEvent(double now) {
         (m_IsUsingSharp ? m_DurationWithSharp : m_DurationWithoutSharp) += m_CurrentTransmissionDuration;
         m_AfterTransmissionCallback(*this, now);
         if (m_NextAggrTree) {
+            if (m_NextAggrTree != m_AggrTree)
+                ++m_TreeMigrationCount;
             m_AggrTree = std::move(*m_NextAggrTree);
             m_NextAggrTree = std::nullopt;
         }

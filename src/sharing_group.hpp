@@ -17,6 +17,10 @@ private:
     std::function<CommOpScheduleResult(const SharingGroup &, const Job &, double)> m_SharingPolicy;
 
 public:
+    inline static bool RecordSharingOverhead = false;
+    inline static unsigned int SharingPolicyCallCount = 0;
+    inline static unsigned long long SharingPolicyOverhead = 0; // In nanosecond
+
     const std::vector<Job *> Jobs;
 
     explicit SharingGroup(std::vector<Job *> &&jobs, FatTreeResource *resources,

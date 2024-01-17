@@ -13,7 +13,7 @@ void SmartTreeBuildingPolicy::operator()(const FatTreeResource &resources,
         auto roots = resources.Topology->GetClosestCommonAncestors(jobs[jobIdx]->GetHosts());
         std::vector<const FatTree::Node *> chosenRoots;
         if (MaxTreeCount && *MaxTreeCount < roots.size()) {
-            thread_local std::default_random_engine engine(std::random_device{}());
+            thread_local std::default_random_engine engine(42);
             std::sample(roots.cbegin(), roots.cend(), std::back_inserter(chosenRoots), *MaxTreeCount, engine);
         } else
             chosenRoots = roots;

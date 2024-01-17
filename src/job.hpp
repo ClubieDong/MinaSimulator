@@ -1,6 +1,7 @@
 #pragma once
 
 #include "fat_tree.hpp"
+#include <atomic>
 #include <functional>
 #include <optional>
 #include <vector>
@@ -45,7 +46,7 @@ struct CommOpRunningInfo {
 
 class Job {
 private:
-    inline static unsigned int m_NextID = 0;
+    inline static std::atomic<unsigned int> m_NextID = 0;
 
     // Given the job and the current time, returns CommOpScheduleResult.
     std::function<CommOpScheduleResult(const Job &, double)> m_BeforeTransmissionCallback;
@@ -71,6 +72,8 @@ private:
     double m_FinishTime;
     double m_DurationWithSharp = 0.0;
     double m_DurationWithoutSharp = 0.0;
+    unsigned int m_TreeMigrationCount = 0;
+    unsigned int m_ConsensusCount = 0;
 
     std::vector<const FatTree::Node *> m_Hosts;
     std::optional<FatTree::AggrTree> m_AggrTree;
@@ -115,6 +118,8 @@ public:
     double GetFinishTime() const { return m_FinishTime; }
     double GetDurationWithSharp() const { return m_DurationWithSharp; }
     double GetDurationWithoutSharp() const { return m_DurationWithoutSharp; }
+    unsigned int GetTreeMigrationCount() const { return m_TreeMigrationCount; }
+    unsigned int GetConsensusCount() const { return m_ConsensusCount; }
     const std::vector<const FatTree::Node *> &GetHosts() const { return m_Hosts; }
     const std::optional<FatTree::AggrTree> &GetCurrentAggrTree() const { return m_AggrTree; }
     const std::optional<FatTree::AggrTree> &GetNextAggrTree() const {
@@ -129,4 +134,5 @@ public:
     }
     void SetHosts(std::vector<const FatTree::Node *> &&hosts);
     void SetNextAggrTree(std::optional<FatTree::AggrTree> &&aggrTree);
+    void IncrementConsensusCount() { ++m_ConsensusCount; }
 };

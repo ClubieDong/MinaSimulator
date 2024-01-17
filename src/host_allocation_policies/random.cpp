@@ -15,7 +15,7 @@ RandomHostAllocationPolicy::operator()(const FatTreeResource &resources, unsigne
     if (availableHosts.size() < hostCount)
         return std::nullopt;
     std::vector<const Node *> chosenHosts;
-    thread_local std::default_random_engine engine(std::random_device{}());
+    thread_local std::default_random_engine engine(42);
     std::sample(availableHosts.cbegin(), availableHosts.cend(), std::back_inserter(chosenHosts), hostCount, engine);
     return chosenHosts;
 }

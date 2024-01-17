@@ -11,14 +11,25 @@
 #include <vector>
 
 struct SimulationResult {
+    unsigned int FinishedJobCount = 0;
     double SimulatedTime;
     double ClusterUtilization;
     double JCTScore;
+    double SharpRatio;
+    double SharpUtilization = 0.0;
 
     double TotalHostTime = 0.0;
     double TotalJCT = 0.0;
     double TotalJCTWithSharp = 0.0;
     double TotalJCTWithoutSharp = 0.0;
+    double TotalSharpTime = 0.0;
+    double TotalSharpUsage = 0.0;
+
+    double TimeCostHostAllocation = 0.0;
+    double TimeCostTreeBuilding = 0.0;
+    unsigned int TreeMigrationCount = 0;
+    unsigned int SharpEnabledJobCount = 0;
+    double ConsensusFrequency = 0.0;
 };
 
 class AllocationController {
@@ -54,13 +65,14 @@ private:
     std::vector<bool> m_TreeConflictTrace;
 
     void BuildSharingGroups();
-    void RunNewJobs(bool rebuildSharingGroups);
+    void RunNewJobs(bool rebuildSharingGroups, SimulationResult &result);
     // Returns the time of the next event, the job that will run next, and the sharing group of that job.
     std::tuple<double, Job *, SharingGroup *> GetNextEvent(double now);
     void ShowProgress(double now, bool last);
 
 public:
     bool RecordTreeConflicts = false;
+    bool ExclusiveAggrTree = false;
 
     explicit AllocationController(FatTreeResource &&resources, decltype(m_GetNextJob) &&getNextJob,
                                   HostAllocationPolicy &&hostAllocationPolicy, TreeBuildingPolicy &&treeBuildingPolicy,

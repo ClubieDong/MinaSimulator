@@ -1,6 +1,7 @@
 #include "allocation_controller.hpp"
 #include "utils/union_find.hpp"
 #include <cassert>
+#include <chrono>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -44,10 +45,14 @@ void AllocationController::BuildSharingGroups() {
     }
 }
 
-void AllocationController::RunNewJobs(bool rebuildSharingGroups) {
+void AllocationController::RunNewJobs(bool rebuildSharingGroups, SimulationResult &result) {
     std::vector<Job *> newJobs;
     while (m_NextJob) {
+        auto start = std::chrono::high_resolution_clock::now();
         auto hosts = m_HostAllocationPolicy(m_Resources, m_NextJob->HostCount);
+        auto finish = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(finish - start);
+        result.TimeCostHostAllocation += duration.count() / 1000.0;
         if (!hosts)
             break;
         m_Resources.Allocate(*hosts);
@@ -57,8 +62,18 @@ void AllocationController::RunNewJobs(bool rebuildSharingGroups) {
         ++m_AllocatedJobCount;
         m_NextJob = m_GetNextJob();
     }
-    if (!newJobs.empty())
+    if (!newJobs.empty()) {
+        auto start = std::chrono::high_resolution_clock::now();
         m_TreeBuildingPolicy(m_Resources, m_RunningJobs, newJobs);
+        auto finish = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(finish - start);
+        result.TimeCostTreeBuilding += duration.count() / 1000.0;
+        for (auto job : newJobs)
+            if (ExclusiveAggrTree && job->GetCurrentAggrTree()) {
+                ++result.SharpEnabledJobCount;
+                m_Resources.Allocate(*job->GetCurrentAggrTree());
+            }
+    }
     if (RecordTreeConflicts) {
         for (auto job : newJobs)
             m_TreeConflictTrace.push_back(!job->GetNextAggrTree().has_value());
@@ -130,7 +145,7 @@ SimulationResult AllocationController::RunSimulation(std::optional<double> maxSi
     m_LastShowProgressTime = std::nullopt;
     SimulationResult result;
     double now = 0.0;
-    RunNewJobs(false);
+    RunNewJobs(false, result);
     if (showProgress)
         ShowProgress(now, false);
     while (!m_RunningJobs.empty() && (!m_MaxSimulationTime || now <= *m_MaxSimulationTime)) {
@@ -142,17 +157,29 @@ SimulationResult AllocationController::RunSimulation(std::optional<double> maxSi
         auto jobFinished = sharingGroup->RunNextEvent(now, job);
         if (jobFinished) {
             assert(job->StepCount);
+            ++result.FinishedJobCount;
             result.TotalHostTime += (job->GetFinishTime() - job->GetStartTime()) * job->HostCount;
             result.TotalJCT += job->GetFinishTime() - job->GetStartTime();
             result.TotalJCTWithSharp += job->StepDurationWithSharp * *job->StepCount;
             result.TotalJCTWithoutSharp += job->StepDurationWithoutSharp * *job->StepCount;
+            result.TotalSharpTime += job->GetDurationWithSharp();
+            result.TreeMigrationCount += job->GetTreeMigrationCount();
+            result.ConsensusFrequency += job->GetConsensusCount() / (job->GetFinishTime() - job->GetStartTime());
+            if (m_Resources.NodeQuota) {
+                const auto &aggrTree = job->GetCurrentAggrTree();
+                assert(aggrTree);
+                auto occupiedSharpResource = aggrTree->first.size() - job->HostCount;
+                result.TotalSharpUsage += job->GetDurationWithSharp() * occupiedSharpResource;
+            }
             m_Resources.Deallocate(job->GetHosts());
+            if (ExclusiveAggrTree && job->GetCurrentAggrTree())
+                m_Resources.Deallocate(*job->GetCurrentAggrTree());
             for (auto iter = m_RunningJobs.cbegin(); iter != m_RunningJobs.cend(); ++iter)
                 if (iter->get() == job) {
                     m_RunningJobs.erase(iter);
                     break;
                 }
-            RunNewJobs(true);
+            RunNewJobs(true, result);
         }
     }
     if (showProgress)
@@ -162,10 +189,25 @@ SimulationResult AllocationController::RunSimulation(std::optional<double> maxSi
         result.TotalJCT += job->GetCurrentGroupStartTime() - job->GetStartTime();
         result.TotalJCTWithSharp += job->StepDurationWithSharp * job->GetCurrentStepIdx();
         result.TotalJCTWithoutSharp += job->StepDurationWithoutSharp * job->GetCurrentStepIdx();
+        result.TotalSharpTime += job->GetDurationWithSharp();
+        result.TreeMigrationCount += job->GetTreeMigrationCount();
+        if (m_Resources.NodeQuota) {
+            const auto &aggrTree = job->GetCurrentAggrTree();
+            assert(aggrTree);
+            auto occupiedSharpResource = aggrTree->first.size() - job->HostCount;
+            result.TotalSharpUsage += job->GetDurationWithSharp() * occupiedSharpResource;
+        }
     }
     result.SimulatedTime = now;
     result.ClusterUtilization = result.TotalHostTime / (now * m_Resources.Topology->NodesByLayer[0].size());
     result.JCTScore =
         (result.TotalJCT - result.TotalJCTWithoutSharp) / (result.TotalJCTWithSharp - result.TotalJCTWithoutSharp);
+    result.SharpRatio = result.TotalSharpTime / result.TotalJCT;
+    result.ConsensusFrequency /= result.FinishedJobCount;
+    if (m_Resources.NodeQuota) {
+        const auto &topology = *m_Resources.Topology;
+        auto switchCount = topology.Nodes.size() - topology.NodesByLayer[0].size();
+        result.SharpUtilization = result.TotalSharpUsage / (now * switchCount);
+    }
     return result;
 }

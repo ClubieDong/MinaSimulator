@@ -1,6 +1,7 @@
 #pragma once
 
 #include "job.hpp"
+#include <mutex>
 #include <nlohmann/json.hpp>
 #include <unordered_map>
 #include <vector>
@@ -19,6 +20,7 @@ public:
 
 class ModelInfoProvider {
 private:
+    inline static std::mutex m_CacheMtx;
     inline static std::unordered_map<const char *, nlohmann::json> m_ModelInfoCache;
 
 public:

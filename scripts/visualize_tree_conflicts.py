@@ -30,7 +30,7 @@ tree_conflicts = np.array(data["tree_conflicts"])
 tree_conflicts = np.convolve(tree_conflicts, np.ones(sliding_window_size)/sliding_window_size, mode="valid")
 
 plt.rcParams["font.family"] = "Times New Roman"
-fig, ax1 = plt.subplots(figsize=(5, 2.5))
+fig, ax1 = plt.subplots(figsize=(4, 2))
 ax2 = ax1.twinx()
 ax1.plot(x_range, tree_conflicts, color=(200/255,36/255,35/255), label="Probability of tree conflict")
 ax2.plot(x_range, total_frags, color=(40/255,120/255,181/255), label="# of host fragments")
@@ -42,5 +42,5 @@ handles2, labels2 = ax2.get_legend_handles_labels()
 handles = handles1 + handles2
 labels = labels1 + labels2
 ax1.legend(handles, labels, loc="lower right")
-plt.tight_layout()
+plt.tight_layout(pad=0.5)
 plt.savefig(figure_path, dpi=400)

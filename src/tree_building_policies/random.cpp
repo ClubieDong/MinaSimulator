@@ -11,7 +11,7 @@ void RandomTreeBuildingPolicy::operator()(const FatTreeResource &resources, cons
                 trees.push_back(std::move(tree));
         }
         if (!trees.empty()) {
-            thread_local std::default_random_engine engine(std::random_device{}());
+            thread_local std::default_random_engine engine(42);
             std::uniform_int_distribution<std::size_t> random(0, trees.size() - 1);
             job->SetNextAggrTree(std::move(trees[random(engine)]));
         }
