@@ -14,6 +14,6 @@ void TestAccelerateEffectiveness() {
         }
     }
     nlohmann::json jsonResult = result;
-    std::ofstream file("accelerate_effectiveness.json");
+    std::ofstream file("results/accelerate_effectiveness.json");
     file << jsonResult;
 }

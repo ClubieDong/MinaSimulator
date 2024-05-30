@@ -4,7 +4,7 @@ import numpy as np
 from tqdm import trange
 from matplotlib import pyplot as plt
 
-file_path = "build/tree_conflict_trace.json"
+file_path = "results/tree_conflict_trace.json"
 figure_path = "figures/conflicts-vs-fragments.pdf"
 sliding_window_size = 1000
 
@@ -32,8 +32,9 @@ tree_conflicts = np.convolve(tree_conflicts, np.ones(sliding_window_size)/slidin
 plt.rcParams["font.family"] = "Times New Roman"
 fig, ax1 = plt.subplots(figsize=(4, 2))
 ax2 = ax1.twinx()
-ax1.plot(x_range, tree_conflicts, color=(200/255,36/255,35/255), label="Probability of tree conflict")
-ax2.plot(x_range, total_frags, color=(40/255,120/255,181/255), label="# of host fragments")
+ax1.grid(zorder=0)
+ax1.plot(x_range, tree_conflicts, color=(200/255,36/255,35/255), label="Probability of tree conflict", zorder=2)
+ax2.plot(x_range, total_frags, color=(40/255,120/255,181/255), label="# of host fragments", zorder=2)
 ax1.set_xlabel("# of processed requests")
 ax1.set_ylabel("Probability")
 ax2.set_ylabel("# of fragments")

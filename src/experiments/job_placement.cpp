@@ -73,6 +73,6 @@ void TestJobPlacement() {
             std::cout << j << ' ';
         std::cout << '\n';
     }
-    std::ofstream file("job_placement.json");
+    std::ofstream file("results/job_placement.json");
     file << jsonResult;
 }

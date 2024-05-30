@@ -30,7 +30,7 @@ void TestSharing() {
     nlohmann::json jsonResult;
     jsonResult["model_list"] = ModelList;
     jsonResult["result"] = resultMat;
-    std::ofstream file("sharing.json");
+    std::ofstream file("results/sharing.json");
     file << jsonResult;
     std::cout << std::setprecision(6) << std::fixed;
     double jctScoreSum = 0.0;

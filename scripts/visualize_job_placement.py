@@ -2,7 +2,7 @@ import json
 import numpy as np
 from matplotlib import pyplot as plt
 
-file_path = "build/job_placement.json"
+file_path = "results/job_placement.json"
 figure_path = "figures/job-placement.pdf"
 
 with open(file_path, "r") as f:
@@ -16,9 +16,10 @@ x_range = np.arange(len(data))
 bar_width = 0.35
 plt.rcParams["font.family"] = "Times New Roman"
 plt.figure(figsize=(4, 2.5))
-# plt.bar(x_range, data1, bar_width, label="Random", color=(200/255,36/255,35/255))
-plt.bar(x_range, data2, bar_width, label="Baseline", color=(200/255,36/255,35/255))
-plt.bar(x_range+bar_width, data3, bar_width, label="MINA", color=(40/255,120/255,181/255))
+plt.grid(axis="y", zorder=0)
+# plt.bar(x_range, data1, bar_width, label="Random", color=(200/255,36/255,35/255), zorder=2)
+plt.bar(x_range, data2, bar_width, label="Baseline", color=(200/255,36/255,35/255), zorder=2)
+plt.bar(x_range+bar_width, data3, bar_width, label="MINA", color=(40/255,120/255,181/255), zorder=2)
 plt.legend()
 plt.xlabel("Oversubscription ratio")
 plt.ylabel("INA efficiency score")

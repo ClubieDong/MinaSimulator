@@ -24,8 +24,8 @@ std::string Tracer::GetEventNameFromJob(const Job &job, bool includeStep, bool i
 Tracer::~Tracer() {
     if (!EnableRecording)
         return;
-    std::ofstream file("trace.json");
-    file << m_RecordedTraces.dump();
+    std::ofstream file("results/trace.json");
+    file << m_RecordedTraces;
 }
 
 void Tracer::RecordEvent(std::string &&name, const char *category, bool isBegin, unsigned int pid, unsigned int tid,

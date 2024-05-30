@@ -57,7 +57,7 @@ void TestLargeScaleSimulation() {
             {"JCTScore", result.JCTScore},
             {"SharpRatio", result.SharpRatio},
         });
-    std::ofstream file("large_scale_simulation.json");
+    std::ofstream file("results/large_scale_simulation.json");
     file << jsonResult;
 
     std::cout << std::setprecision(6) << std::fixed;

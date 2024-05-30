@@ -1,4 +1,7 @@
 /build/
 /.cache/
 /.vscode/
-/figures/
+/figures/*
+!/figures/.gitkeep
+/results/*
+!/results/.gitkeep

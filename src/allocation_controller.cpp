@@ -136,8 +136,8 @@ AllocationController::~AllocationController() {
         {"host_fragments", m_HostFragmentTrace},
         {"tree_conflicts", m_TreeConflictTrace},
     };
-    std::ofstream file("tree_conflict_trace.json");
-    file << data.dump();
+    std::ofstream file("results/tree_conflict_trace.json");
+    file << data;
 }
 
 SimulationResult AllocationController::RunSimulation(std::optional<double> maxSimulationTime, bool showProgress) {

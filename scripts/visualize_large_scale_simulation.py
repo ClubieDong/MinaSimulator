@@ -2,7 +2,7 @@ import json
 import numpy as np
 from matplotlib import pyplot as plt
 
-file_path = "build/large_scale_simulation.json"
+file_path = "results/large_scale_simulation.json"
 figure_path = "figures/overall-performance.pdf"
 
 with open(file_path, "r") as f:
@@ -18,15 +18,17 @@ bar_width = 0.35
 
 plt.rcParams["font.family"] = "Times New Roman"
 fig, axs = plt.subplots(1, 2, figsize=(7, 2.5))
-axs[0].bar(index, baseline_jct_score, bar_width, label="Baseline", color=(200/255,36/255,35/255))
-axs[0].bar(index + bar_width, mina_jct_score, bar_width, label="MINA", color=(40/255,120/255,181/255))
+axs[0].grid(axis="y", zorder=0)
+axs[0].bar(index, baseline_jct_score, bar_width, label="Baseline", color=(200/255,36/255,35/255), zorder=2)
+axs[0].bar(index + bar_width, mina_jct_score, bar_width, label="MINA", color=(40/255,120/255,181/255), zorder=2)
 axs[0].legend(loc="upper left")
 axs[0].set_xlabel("Trace ID")
 axs[0].set_ylabel("INA efficiency score")
 axs[0].set_xticks(index + bar_width / 2, [f"{i+1}" for i in range(10)])
 
-axs[1].bar(index, baseline_sharp_ratio, bar_width, label="Baseline", color=(200/255,36/255,35/255))
-axs[1].bar(index + bar_width, mina_sharp_ratio, bar_width, label="MINA", color=(40/255,120/255,181/255))
+axs[1].grid(axis="y", zorder=0)
+axs[1].bar(index, baseline_sharp_ratio, bar_width, label="Baseline", color=(200/255,36/255,35/255), zorder=2)
+axs[1].bar(index + bar_width, mina_sharp_ratio, bar_width, label="MINA", color=(40/255,120/255,181/255), zorder=2)
 axs[1].legend(loc="upper left")
 axs[1].set_xlabel("Trace ID")
 axs[1].set_ylabel("INA utilization rate")

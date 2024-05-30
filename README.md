@@ -2,76 +2,94 @@
 
 ## Setup
 
-```
+```bash
 git submodule update --init
 ./vcpkg/bootstrap-vcpkg.sh
 ./vcpkg/vcpkg install nlohmann-json
-mkdir figures
 ```
+
+To generate figures, a Python environment with `numpy`, `matplotlib`, and `tqdm` is required.
 
 ## Build
 
-```
+```bash
 mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release ..
 cmake --build . --parallel
+cd ..
 ```
 
 ## Experiments
 
-Before running experiments, make sure the working directory is `build`.
+Before running the experiments, make sure the working directory is the root of this project.
 
-### TestLargeScaleSimulation
+### Large Scale Simulation
 
-```
-mina_sim large-scale-simulation
+For Figure "Overall performance of MINA".
+
+```bash
+build/mina_sim large-scale-simulation
 python scripts/visualize_large_scale_simulation.py
 ```
 
-### TestAblationStudy
+### Ablation Study
 
-```
-mina_sim ablation-study
+For Table "Results of ablation study".
+
+```bash
+build/mina_sim ablation-study
 ```
 
-### TestSharing
+### INA Sharing
 
-```
-mina_sim sharing
+For Figure "Sharing performance".
+
+```bash
+build/mina_sim sharing
 python scripts/visualize_sharing_policy.py
 ```
 
-### TestTreeBuilding
+### Tree Building
 
-```
-mina_sim tree-building
+For Figure "Performance and overhead of tree building algorithm".
+
+```bash
+build/mina_sim tree-building
 python scripts/visualize_tree_building.py
 ```
 
-### TestTreeConflicts
+### Tree Conflicts
 
-```
-mina_sim tree_conflicts
+For Figure "Relationship between tree conflicts and host fragments".
+
+```bash
+build/mina_sim tree-conflicts
 python scripts/visualize_tree_conflicts.py
 ```
 
-### TestJobPlacement
+### Job Placement
 
-```
-mina_sim --name job-placement
+For Figure "Performance of job placement algorithm with different oversubscription ratios".
+
+```bash
+build/mina_sim job-placement
 python scripts/visualize_job_placement.py
 ```
 
-### TestAccelerateEffectiveness
+### Accelerate Effectiveness
 
-```
-mina_sim --name accelerate-effectiveness
+For Figure "Relationship between algorithm bandwidth and duration of one training step".
+
+```bash
+build/mina_sim accelerate-effectiveness
 python scripts/visualize_accelerate_effectiveness.py
 ```
 
-### TestSharingOverhead
+### Sharing Overhead
 
-```
-mina_sim --name sharing-overhead
+For "Overhead of host coordination" in Section 6.4 "Overhead Measurement".
+
+```bash
+build/mina_sim sharing-overhead
 ```

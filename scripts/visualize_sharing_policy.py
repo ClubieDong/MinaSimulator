@@ -4,17 +4,17 @@ from matplotlib import pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 
 
-file_path = "build/sharing.json"
+file_path = "results/sharing.json"
 figure_path = "figures/sharing.pdf"
 
 model_name = {
-    "../data/opt-125m-4.json": "OPT-125M",
-    "../data/opt-350m-4.json": "OPT-350M",
-    "../data/opt-1.3b-4.json": "OPT-1.3B",
-    "../data/bert-base-4.json": "BERT-base",
-    "../data/bert-large-4.json": "BERT-large",
-    "../data/vit-base-4.json": "ViT-base",
-    "../data/vit-large-4.json": "ViT-large",
+    "traces/opt-125m-4.json": "OPT-125M",
+    "traces/opt-350m-4.json": "OPT-350M",
+    "traces/opt-1.3b-4.json": "OPT-1.3B",
+    "traces/bert-base-4.json": "BERT-base",
+    "traces/bert-large-4.json": "BERT-large",
+    "traces/vit-base-4.json": "ViT-base",
+    "traces/vit-large-4.json": "ViT-large",
 }
 
 with open(file_path, "r") as f:

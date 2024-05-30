@@ -1,8 +1,10 @@
 #include "experiments/experiments.hpp"
 
 int main(int argc, const char *argv[]) {
-    if (argc != 2)
+    if (argc != 2) {
+        std::cerr << "Please specify the experiment name to run!\n";
         return 1;
+    }
     std::string name = argv[1];
     if (name == "large-scale-simulation")
         TestLargeScaleSimulation();
@@ -20,5 +22,9 @@ int main(int argc, const char *argv[]) {
         TestAccelerateEffectiveness();
     else if (name == "sharing-overhead")
         TestSharingOverhead();
+    else {
+        std::cerr << "Unknown experiment name!\n";
+        return 1;
+    }
     return 0;
 }

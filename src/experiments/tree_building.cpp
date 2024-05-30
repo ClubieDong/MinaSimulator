@@ -68,6 +68,6 @@ void TestTreeBuilding() {
         });
     }
     jsonResult[jsonResult.size() - 1]["MaxTreeCount"] = "All";
-    std::ofstream file("tree_building.json");
+    std::ofstream file("results/tree_building.json");
     file << jsonResult;
 }

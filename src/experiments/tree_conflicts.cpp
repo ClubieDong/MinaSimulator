@@ -9,7 +9,7 @@ void TestTreeConflicts() {
         if (jobCount >= 20000)
             return nullptr;
         ++jobCount;
-        auto model = "../data/opt-350m-16.json";
+        auto model = "traces/opt-350m-16.json";
         thread_local std::default_random_engine engine(42);
         thread_local std::vector<unsigned int> hostCountList = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
         thread_local std::vector<unsigned int> stepCountList = {10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
