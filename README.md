@@ -1,6 +1,8 @@
-# MinaSimulator
+# MINA: Fine-grained In-network Aggregation Resource Scheduling for Machine Learning Service
 
-## Setup
+This is the official repository of the paper "MINA: Fine-grained In-network Aggregation Resource Scheduling for Machine Learning Service" (to be published).
+
+## Setup environment
 
 ```bash
 git submodule update --init
