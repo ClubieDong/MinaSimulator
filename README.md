@@ -1,6 +1,6 @@
 # MINA: Fine-grained In-network Aggregation Resource Scheduling for Machine Learning Service
 
-This is the official repository of the paper "MINA: Fine-grained In-network Aggregation Resource Scheduling for Machine Learning Service" (to be published).
+This is the official repository to reproduce the simulation results of the paper "MINA: Fine-grained In-network Aggregation Resource Scheduling for Machine Learning Service" (accepted by INFOCOM 2025, to be published).
 
 ## Setup environment
 
@@ -11,6 +11,8 @@ git submodule update --init
 ```
 
 To generate figures, a Python environment with `numpy`, `matplotlib`, and `tqdm` is required.
+
+All experiments are compiled with Apple clang v12.0.5 targeting arm64-apple-darwin24.1.0 and run on MacBook Pro M1. Although experiments are deterministic, the results may vary on different platforms.
 
 ## Build
 
