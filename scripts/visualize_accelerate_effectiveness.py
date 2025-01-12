@@ -17,6 +17,8 @@ bandwidth = [x[0]/1e9 for x in series if min_bandwidth <= x[0] <= max_bandwidth]
 jct = [x[1] for x in series if min_bandwidth <= x[0] <= max_bandwidth]
 
 plt.rcParams["font.family"] = "Times New Roman"
+plt.rcParams["pdf.fonttype"] = 42
+plt.rcParams["ps.fonttype"] = 42
 fig, ax = plt.subplots(figsize=(4,2))
 ax.grid(zorder=0)
 ax.plot(bandwidth, jct, label=model_name, color=(40/255,120/255,181/255), zorder=2)

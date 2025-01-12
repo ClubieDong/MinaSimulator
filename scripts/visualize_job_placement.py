@@ -15,6 +15,8 @@ x_range = np.arange(len(data))
 
 bar_width = 0.35
 plt.rcParams["font.family"] = "Times New Roman"
+plt.rcParams["pdf.fonttype"] = 42
+plt.rcParams["ps.fonttype"] = 42
 plt.figure(figsize=(4, 2.5))
 plt.grid(axis="y", zorder=0)
 # plt.bar(x_range, data1, bar_width, label="Random", color=(200/255,36/255,35/255), zorder=2)

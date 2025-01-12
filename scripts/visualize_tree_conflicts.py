@@ -30,6 +30,8 @@ tree_conflicts = np.array(data["tree_conflicts"])
 tree_conflicts = np.convolve(tree_conflicts, np.ones(sliding_window_size)/sliding_window_size, mode="valid")
 
 plt.rcParams["font.family"] = "Times New Roman"
+plt.rcParams["pdf.fonttype"] = 42
+plt.rcParams["ps.fonttype"] = 42
 fig, ax1 = plt.subplots(figsize=(4, 2))
 ax2 = ax1.twinx()
 ax1.grid(zorder=0)

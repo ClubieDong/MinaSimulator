@@ -24,6 +24,8 @@ model_list = [model_name[x] for x in model_list]
 result = [[x or math.nan for x in row] for row in data["result"]]
 
 plt.rcParams["font.family"] = "Times New Roman"
+plt.rcParams["pdf.fonttype"] = 42
+plt.rcParams["ps.fonttype"] = 42
 cm = LinearSegmentedColormap.from_list("my_colormap", [(255/255, 217/255, 102/255), (255/255, 242/255, 204/255), (169/255, 209/255, 142/255)], N=1000)
 plt.figure(figsize=(4, 3.3))
 plt.imshow(result, vmin=0.5, vmax=1.0, cmap=cm)

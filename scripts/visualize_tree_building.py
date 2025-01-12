@@ -14,6 +14,8 @@ x_range = list(range(len(max_tree_count)))
 x_range[-1] += 0.5
 
 plt.rcParams["font.family"] = "Times New Roman"
+plt.rcParams["pdf.fonttype"] = 42
+plt.rcParams["ps.fonttype"] = 42
 fig, ax1 = plt.subplots(figsize=(4, 2.5))
 ax1.grid(axis="y", zorder=0)
 ax1.bar(x_range, tree_building, 0.6, label="Running time", color=(40/255,120/255,181/255), zorder=2)

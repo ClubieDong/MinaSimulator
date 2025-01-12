@@ -17,6 +17,8 @@ index = np.arange(10)
 bar_width = 0.35
 
 plt.rcParams["font.family"] = "Times New Roman"
+plt.rcParams["pdf.fonttype"] = 42
+plt.rcParams["ps.fonttype"] = 42
 fig, axs = plt.subplots(1, 2, figsize=(7, 2.5))
 axs[0].grid(axis="y", zorder=0)
 axs[0].bar(index, baseline_jct_score, bar_width, label="Baseline", color=(200/255,36/255,35/255), zorder=2)
