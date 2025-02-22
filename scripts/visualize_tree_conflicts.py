@@ -29,17 +29,22 @@ total_frags = allocated_frags + available_frags
 tree_conflicts = np.array(data["tree_conflicts"])
 tree_conflicts = np.convolve(tree_conflicts, np.ones(sliding_window_size)/sliding_window_size, mode="valid")
 
-plt.rcParams["font.family"] = "Times New Roman"
+x_range = x_range[:18000]
+total_frags = total_frags[:18000]
+tree_conflicts = tree_conflicts[:18000]
+
+plt.rcParams["font.family"] = ["Times New Roman", "SimSong"]
+plt.rcParams["font.size"] = 12
 plt.rcParams["pdf.fonttype"] = 42
 plt.rcParams["ps.fonttype"] = 42
-fig, ax1 = plt.subplots(figsize=(4, 2))
+fig, ax1 = plt.subplots(figsize=(6, 3))
 ax2 = ax1.twinx()
 ax1.grid(zorder=0)
-ax1.plot(x_range, tree_conflicts, color=(200/255,36/255,35/255), label="Probability of tree conflict", zorder=2)
-ax2.plot(x_range, total_frags, color=(40/255,120/255,181/255), label="# of host fragments", zorder=2)
-ax1.set_xlabel("# of processed requests")
-ax1.set_ylabel("Probability")
-ax2.set_ylabel("# of fragments")
+ax1.plot(x_range, tree_conflicts, color=(200/255,36/255,35/255), label="聚合树冲突概率", zorder=2)
+ax2.plot(x_range, total_frags, color=(40/255,120/255,181/255), label="计算资源碎片数量", zorder=2)
+ax1.set_xlabel("已处理的训练请求数量")
+ax1.set_ylabel("冲突概率")
+ax2.set_ylabel("碎片数量")
 handles1, labels1 = ax1.get_legend_handles_labels()
 handles2, labels2 = ax2.get_legend_handles_labels()
 handles = handles1 + handles2

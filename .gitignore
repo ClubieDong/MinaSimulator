@@ -1,8 +1,4 @@
 /build/
 /.cache/
 /.vscode/
-/figures/*
-!/figures/.gitkeep
-/results/*
-!/results/.gitkeep
 .DS_Store
