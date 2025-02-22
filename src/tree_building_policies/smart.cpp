@@ -1,5 +1,6 @@
 #include "smart.hpp"
 #include "utils/graph.hpp"
+#include <algorithm>
 #include <cassert>
 #include <random>
 
