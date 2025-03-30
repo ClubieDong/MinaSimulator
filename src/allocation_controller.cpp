@@ -7,6 +7,50 @@
 #include <iostream>
 #include <nlohmann/json.hpp>
 
+void to_json(nlohmann::json &json, const SimulationResult &result) {
+    json = {
+        {"FinishedJobCount", result.FinishedJobCount},
+        {"SimulatedTime", result.SimulatedTime},
+        {"ClusterUtilization", result.ClusterUtilization},
+        {"JCTScore", result.JCTScore},
+        {"SharpRatio", result.SharpRatio},
+        {"SharpUtilization", result.SharpUtilization},
+        {"TotalHostTime", result.TotalHostTime},
+        {"TotalJCT", result.TotalJCT},
+        {"TotalJCTWithSharp", result.TotalJCTWithSharp},
+        {"TotalJCTWithoutSharp", result.TotalJCTWithoutSharp},
+        {"TotalSharpTime", result.TotalSharpTime},
+        {"TotalSharpUsage", result.TotalSharpUsage},
+        {"TimeCostHostAllocation", result.TimeCostHostAllocation},
+        {"TimeCostTreeBuilding", result.TimeCostTreeBuilding},
+        {"TreeMigrationCount", result.TreeMigrationCount},
+        {"SharpEnabledJobCount", result.SharpEnabledJobCount},
+        {"ConsensusFrequency", result.ConsensusFrequency},
+    };
+}
+
+std::ostream &operator<<(std::ostream &os, const SimulationResult &result) {
+    os << std::setprecision(2) << std::fixed;
+    os << "  FinishedJobCount:       " << result.FinishedJobCount << '\n';
+    os << "  SimulatedTime:          " << result.SimulatedTime << " sec\n";
+    os << "  ClusterUtilization:     " << result.ClusterUtilization * 100 << "%\n";
+    os << "  JCTScore:               " << result.JCTScore << '\n';
+    os << "  SharpRatio:             " << result.SharpRatio * 100 << "%\n";
+    os << "  SharpUtilization:       " << result.SharpUtilization * 100 << "%\n";
+    os << "  TotalHostTime:          " << result.TotalHostTime << " sec\n";
+    os << "  TotalJCT:               " << result.TotalJCT << " sec\n";
+    os << "  TotalJCTWithSharp:      " << result.TotalJCTWithSharp << " sec\n";
+    os << "  TotalJCTWithoutSharp:   " << result.TotalJCTWithoutSharp << " sec\n";
+    os << "  TotalSharpTime:         " << result.TotalSharpTime << " sec\n";
+    os << "  TotalSharpUsage:        " << result.TotalSharpUsage * 100 << "%\n";
+    os << "  TimeCostHostAllocation: " << result.TimeCostHostAllocation << " ms (wall clock)\n";
+    os << "  TimeCostTreeBuilding:   " << result.TimeCostTreeBuilding << " ms (wall clock)\n";
+    os << "  TreeMigrationCount:     " << result.TreeMigrationCount << '\n';
+    os << "  SharpEnabledJobCount:   " << result.SharpEnabledJobCount << '\n';
+    os << "  ConsensusFrequency:     " << result.ConsensusFrequency << " times per sec\n";
+    return os;
+}
+
 void AllocationController::BuildSharingGroups() {
     UnionFind u(m_RunningJobs.size());
     for (unsigned int i = 0; i < m_RunningJobs.size(); ++i) {
@@ -45,7 +89,7 @@ void AllocationController::BuildSharingGroups() {
     }
 }
 
-void AllocationController::RunNewJobs(bool rebuildSharingGroups, SimulationResult &result) {
+void AllocationController::RunNewJobs(SimulationResult &result) {
     std::vector<Job *> newJobs;
     while (m_NextJob) {
         auto start = std::chrono::high_resolution_clock::now();
@@ -62,18 +106,11 @@ void AllocationController::RunNewJobs(bool rebuildSharingGroups, SimulationResul
         ++m_AllocatedJobCount;
         m_NextJob = m_GetNextJob();
     }
-    if (!newJobs.empty()) {
-        auto start = std::chrono::high_resolution_clock::now();
-        m_TreeBuildingPolicy(m_Resources, m_RunningJobs, newJobs);
-        auto finish = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(finish - start);
-        result.TimeCostTreeBuilding += duration.count() / 1000.0;
-        for (auto job : newJobs)
-            if (ExclusiveAggrTree && job->GetCurrentAggrTree()) {
-                ++result.SharpEnabledJobCount;
-                m_Resources.Allocate(*job->GetCurrentAggrTree());
-            }
-    }
+    auto start = std::chrono::high_resolution_clock::now();
+    m_TreeBuildingPolicy(m_Resources, m_RunningJobs, newJobs);
+    auto finish = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(finish - start);
+    result.TimeCostTreeBuilding += duration.count() / 1000.0;
     if (RecordTreeConflicts) {
         for (auto job : newJobs)
             m_TreeConflictTrace.push_back(!job->GetNextAggrTree().has_value());
@@ -82,8 +119,7 @@ void AllocationController::RunNewJobs(bool rebuildSharingGroups, SimulationResul
             m_Resources.CalcHostFragments(true),
         };
     }
-    if (!newJobs.empty() || rebuildSharingGroups)
-        BuildSharingGroups();
+    BuildSharingGroups();
 }
 
 std::tuple<double, Job *, SharingGroup *> AllocationController::GetNextEvent(double now) {
@@ -145,7 +181,7 @@ SimulationResult AllocationController::RunSimulation(std::optional<double> maxSi
     m_LastShowProgressTime = std::nullopt;
     SimulationResult result;
     double now = 0.0;
-    RunNewJobs(false, result);
+    RunNewJobs(result);
     if (showProgress)
         ShowProgress(now, false);
     while (!m_RunningJobs.empty() && (!m_MaxSimulationTime || now <= *m_MaxSimulationTime)) {
@@ -164,22 +200,21 @@ SimulationResult AllocationController::RunSimulation(std::optional<double> maxSi
             result.TotalJCTWithoutSharp += job->StepDurationWithoutSharp * *job->StepCount;
             result.TotalSharpTime += job->GetDurationWithSharp();
             result.TreeMigrationCount += job->GetTreeMigrationCount();
-            result.ConsensusFrequency += job->GetConsensusCount() / (job->GetFinishTime() - job->GetStartTime());
+            result.ConsensusFrequency += job->GetConsensusCount();
             if (m_Resources.NodeQuota) {
                 const auto &aggrTree = job->GetCurrentAggrTree();
-                assert(aggrTree);
-                auto occupiedSharpResource = aggrTree->first.size() - job->HostCount;
-                result.TotalSharpUsage += job->GetDurationWithSharp() * occupiedSharpResource;
+                if (aggrTree) {
+                    auto occupiedSharpResource = aggrTree->Nodes.size() - job->HostCount;
+                    result.TotalSharpUsage += job->GetDurationWithSharp() * occupiedSharpResource;
+                }
             }
             m_Resources.Deallocate(job->GetHosts());
-            if (ExclusiveAggrTree && job->GetCurrentAggrTree())
-                m_Resources.Deallocate(*job->GetCurrentAggrTree());
             for (auto iter = m_RunningJobs.cbegin(); iter != m_RunningJobs.cend(); ++iter)
                 if (iter->get() == job) {
                     m_RunningJobs.erase(iter);
                     break;
                 }
-            RunNewJobs(true, result);
+            RunNewJobs(result);
         }
     }
     if (showProgress)
@@ -193,9 +228,10 @@ SimulationResult AllocationController::RunSimulation(std::optional<double> maxSi
         result.TreeMigrationCount += job->GetTreeMigrationCount();
         if (m_Resources.NodeQuota) {
             const auto &aggrTree = job->GetCurrentAggrTree();
-            assert(aggrTree);
-            auto occupiedSharpResource = aggrTree->first.size() - job->HostCount;
-            result.TotalSharpUsage += job->GetDurationWithSharp() * occupiedSharpResource;
+            if (aggrTree) {
+                auto occupiedSharpResource = aggrTree->Nodes.size() - job->HostCount;
+                result.TotalSharpUsage += job->GetDurationWithSharp() * occupiedSharpResource;
+            }
         }
     }
     result.SimulatedTime = now;
@@ -203,7 +239,7 @@ SimulationResult AllocationController::RunSimulation(std::optional<double> maxSi
     result.JCTScore =
         (result.TotalJCT - result.TotalJCTWithoutSharp) / (result.TotalJCTWithSharp - result.TotalJCTWithoutSharp);
     result.SharpRatio = result.TotalSharpTime / result.TotalJCT;
-    result.ConsensusFrequency /= result.FinishedJobCount;
+    result.ConsensusFrequency /= result.TotalJCT;
     if (m_Resources.NodeQuota) {
         const auto &topology = *m_Resources.Topology;
         auto switchCount = topology.Nodes.size() - topology.NodesByLayer[0].size();

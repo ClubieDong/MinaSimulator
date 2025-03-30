@@ -2,7 +2,6 @@
 #include <algorithm>
 #include <cassert>
 #include <queue>
-#include <unordered_set>
 
 std::ostream &operator<<(std::ostream &os, const FatTree::Node &node) {
     os << "Node(ID=" << node.ID << ",Layer=" << node.Layer << ",Indices=";
@@ -15,6 +14,14 @@ std::ostream &operator<<(std::ostream &os, const FatTree::Node &node) {
 std::ostream &operator<<(std::ostream &os, const FatTree::Edge &edge) {
     os << "Edge(ID=" << edge.ID << ",Parent=" << *edge.Parent << ",Child=" << *edge.Child << ")";
     return os;
+}
+
+bool operator==(const FatTree::AggrTree &tree1, const FatTree::AggrTree &tree2) {
+    return tree1.Nodes == tree2.Nodes && tree1.Edges == tree2.Edges;
+}
+
+bool operator!=(const FatTree::AggrTree &tree1, const FatTree::AggrTree &tree2) {
+    return !(tree1 == tree2);
 }
 
 static std::array<unsigned int, FatTree::Height> CreateDownLinkCountFromDegree(unsigned int degree) {
@@ -155,8 +162,15 @@ std::vector<const FatTree::Node *> FatTree::GetClosestCommonAncestors(const std:
 
 FatTree::AggrTree FatTree::GetAggregationTree(const std::vector<const Node *> &leaves, const Node *root) const {
     assert(leaves.size() > 0);
-    std::unordered_set<const Node *> nodes(leaves.cbegin(), leaves.cend());
+    std::vector<const Node *> nodes;
     std::vector<const Edge *> edges;
+    std::vector<char> nodeSet(Nodes.size(), false);
+    std::vector<char> edgeSet(Edges.size(), false);
+    for (auto leaf : leaves) {
+        assert(leaf->Layer == 0);
+        nodes.push_back(leaf);
+        nodeSet[leaf->ID] = true;
+    }
     std::queue<const Node *> queue;
     for (auto leaf : leaves)
         queue.push(leaf);
@@ -168,11 +182,14 @@ FatTree::AggrTree FatTree::GetAggregationTree(const std::vector<const Node *> &l
         auto parentIndices = child->Indices;
         parentIndices[child->Layer] = root->Indices[child->Layer];
         auto parent = &Nodes[GetNodeID(child->Layer + 1, parentIndices)];
-        edges.push_back(&Edges[GetEdgeID(parent, child)]);
-        if (nodes.count(parent) == 0) {
-            nodes.insert(parent);
+        auto edgeId = GetEdgeID(parent, child);
+        edges.push_back(&Edges[edgeId]);
+        edgeSet[edgeId] = true;
+        if (!nodeSet[parent->ID]) {
+            nodes.push_back(parent);
+            nodeSet[parent->ID] = true;
             queue.push(parent);
         }
     }
-    return {std::vector(nodes.cbegin(), nodes.cend()), std::move(edges)};
+    return AggrTree(std::move(nodes), std::move(edges), std::move(nodeSet), std::move(edgeSet));
 }

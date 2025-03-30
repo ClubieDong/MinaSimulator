@@ -31,9 +31,22 @@ public:
         friend std::ostream &operator<<(std::ostream &os, const Edge &edge);
     };
 
-public:
-    using AggrTree = std::pair<std::vector<const Node *>, std::vector<const Edge *>>;
+    class AggrTree {
+    public:
+        std::vector<const Node *> Nodes;
+        std::vector<const Edge *> Edges;
+        std::vector<char> NodeSet, EdgeSet;
 
+        explicit AggrTree(std::vector<const Node *> &&nodes, std::vector<const Edge *> &&edges,
+                          std::vector<char> &&nodeSet, std::vector<char> &&edgeSet)
+            : Nodes(std::move(nodes)), Edges(std::move(edges)), NodeSet(std::move(nodeSet)),
+              EdgeSet(std::move(edgeSet)) {}
+
+        friend bool operator==(const AggrTree &tree1, const AggrTree &tree2);
+        friend bool operator!=(const AggrTree &tree1, const AggrTree &tree2);
+    };
+
+public:
     const std::array<unsigned int, Height> DownLinkCount;
     const std::array<unsigned int, Height> UpLinkCount;
     const std::vector<Node> Nodes;

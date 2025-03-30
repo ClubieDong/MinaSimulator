@@ -32,14 +32,13 @@ FatTreeResource::FatTreeResource(const FatTree &topology, std::optional<unsigned
 }
 
 void FatTreeResource::Allocate(const AggrTree &tree) {
-    const auto &[nodes, edges] = tree;
-    for (auto node : nodes) {
+    for (auto node : tree.Nodes) {
         if (node->Layer == 0)
             continue;
         assert(!NodeQuota || m_NodeUsage[node->ID] < *NodeQuota);
         ++m_NodeUsage[node->ID];
     }
-    for (auto edge : edges) {
+    for (auto edge : tree.Edges) {
         assert(!LinkQuota || m_EdgeUsage[edge->ID] < *LinkQuota);
         ++m_EdgeUsage[edge->ID];
     }
@@ -54,14 +53,13 @@ void FatTreeResource::Allocate(const std::vector<const Node *> &hosts) {
 }
 
 void FatTreeResource::Deallocate(const AggrTree &tree) {
-    const auto &[nodes, edges] = tree;
-    for (auto node : nodes) {
+    for (auto node : tree.Nodes) {
         if (node->Layer == 0)
             continue;
         assert(m_NodeUsage[node->ID] > 0);
         --m_NodeUsage[node->ID];
     }
-    for (auto edge : edges) {
+    for (auto edge : tree.Edges) {
         assert(m_EdgeUsage[edge->ID] > 0);
         --m_EdgeUsage[edge->ID];
     }
@@ -76,35 +74,29 @@ void FatTreeResource::Deallocate(const std::vector<const Node *> &hosts) {
 }
 
 bool FatTreeResource::CheckTreeConflict(const AggrTree &tree) const {
-    const auto &[nodes, edges] = tree;
     if (NodeQuota)
-        for (auto node : nodes) {
+        for (auto node : tree.Nodes) {
             if (node->Layer == 0)
                 continue;
             if (m_NodeUsage[node->ID] >= *NodeQuota)
                 return true;
         }
     if (LinkQuota)
-        for (auto edge : edges)
+        for (auto edge : tree.Edges)
             if (m_EdgeUsage[edge->ID] >= *LinkQuota)
                 return true;
     return false;
 }
 
 bool FatTreeResource::CheckTreeConflict(const AggrTree &tree1, const AggrTree &tree2) const {
-    // TODO: Optimize
-    const auto &[nodes1, edges1] = tree1;
-    const auto &[nodes2, edges2] = tree2;
     if (NodeQuota && *NodeQuota < 2)
-        for (auto node1 : nodes1)
-            for (auto node2 : nodes2)
-                if (node1 == node2)
-                    return true;
+        for (auto node : tree1.Nodes)
+            if (tree2.NodeSet[node->ID])
+                return true;
     if (LinkQuota && *LinkQuota < 2)
-        for (auto edge1 : edges1)
-            for (auto edge2 : edges2)
-                if (edge1 == edge2)
-                    return true;
+        for (auto edge : tree1.Edges)
+            if (tree2.EdgeSet[edge->ID])
+                return true;
     return false;
 }
 

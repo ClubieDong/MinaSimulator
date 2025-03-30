@@ -49,8 +49,7 @@ std::unordered_set<unsigned int> Graph::CalcMaxIndependentSet() {
         nodeOffsets.push_back(nodeOffsets.back() + adj.size());
     }
     MisSolver solver(NodeCount, edgeCount, std::move(nodeOffsets), std::move(edges));
-    // TODO: LinearSolver or NearLinearSolver?
-    auto inMis = solver.LinearSolver();
+    auto inMis = solver.NearLinearSolver();
     std::unordered_set<unsigned int> mis;
     for (unsigned int i = 0; i < inMis.size(); ++i)
         if (inMis[i])
