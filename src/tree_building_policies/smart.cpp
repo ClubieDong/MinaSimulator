@@ -2,12 +2,17 @@
 #include "utils/graph.hpp"
 #include <algorithm>
 #include <cassert>
+#include <iostream>
 #include <random>
+#include <unordered_set>
+
+constexpr bool SHOW_TIME = false;
 
 void SmartTreeBuildingPolicy::operator()(const FatTreeResource &resources,
                                          const std::vector<std::unique_ptr<Job>> &jobs,
                                          const std::vector<Job *> &newJobs) {
     // Get sub graph from previous conflict graph
+    auto start = std::chrono::high_resolution_clock::now();
     std::unordered_map<unsigned int, Job *> jobIdMap;
     for (auto &job : jobs)
         jobIdMap[job->ID] = job.get();
@@ -23,8 +28,13 @@ void SmartTreeBuildingPolicy::operator()(const FatTreeResource &resources,
     m_ConflictGraph = m_ConflictGraph.GetSubGraph(nodeSet);
     m_AggrTrees = std::move(newAggrTrees);
     m_TreeIdxToJobId = std::move(newTreeIdxToJobId);
+    auto finish = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(finish - start).count();
+    if (SHOW_TIME)
+        std::cout << "Sub graph time: " << duration / 1000.0 << " ms\n";
 
     // Build aggregation tree for each new job
+    start = std::chrono::high_resolution_clock::now();
     for (auto newJob : newJobs) {
         auto roots = resources.Topology->GetClosestCommonAncestors(newJob->GetHosts());
         std::vector<const FatTree::Node *> chosenRoots;
@@ -38,8 +48,13 @@ void SmartTreeBuildingPolicy::operator()(const FatTreeResource &resources,
             m_TreeIdxToJobId.push_back(newJob->ID);
         }
     }
+    finish = std::chrono::high_resolution_clock::now();
+    duration = std::chrono::duration_cast<std::chrono::microseconds>(finish - start).count();
+    if (SHOW_TIME)
+        std::cout << "Build aggregation tree time: " << duration / 1000.0 << " ms\n";
 
     // Build conflict graph incrementally
+    start = std::chrono::high_resolution_clock::now();
     auto oldSize = m_ConflictGraph.GetNodeCount();
     m_ConflictGraph.SetNodeCount(m_AggrTrees.size());
     for (unsigned int i = oldSize; i < m_ConflictGraph.GetNodeCount(); ++i)
@@ -49,11 +64,21 @@ void SmartTreeBuildingPolicy::operator()(const FatTreeResource &resources,
             if (m_TreeIdxToJobId[i] == m_TreeIdxToJobId[j] ||
                 resources.CheckTreeConflict(m_AggrTrees[i], m_AggrTrees[j]))
                 m_ConflictGraph.AddEdge(i, j, false);
+    finish = std::chrono::high_resolution_clock::now();
+    duration = std::chrono::duration_cast<std::chrono::microseconds>(finish - start).count();
+    if (SHOW_TIME)
+        std::cout << "Incremental conflict graph time: " << duration / 1000.0 << " ms\n";
 
     // Find maximum independent set
+    start = std::chrono::high_resolution_clock::now();
     auto mis = m_ConflictGraph.CalcMaxIndependentSet();
+    finish = std::chrono::high_resolution_clock::now();
+    duration = std::chrono::duration_cast<std::chrono::microseconds>(finish - start).count();
+    if (SHOW_TIME)
+        std::cout << "MIS time: " << duration / 1000.0 << " ms\n";
 
     // Find sharing opportunities
+    start = std::chrono::high_resolution_clock::now();
     std::unordered_set<unsigned int> jobsInMis;
     for (auto center : mis)
         jobsInMis.insert(m_TreeIdxToJobId[center]);
@@ -65,26 +90,20 @@ void SmartTreeBuildingPolicy::operator()(const FatTreeResource &resources,
         job->SetNextAggrTree(std::nullopt);
     for (auto center : mis) {
         jobIdMap[m_TreeIdxToJobId[center]]->SetNextAggrTree(m_AggrTrees[center]);
-        const auto &neighbors = m_ConflictGraph.GetNeighbors(center);
-        std::vector<char> availables(neighbors.size(), false);
-        for (unsigned int i = 0; i < neighbors.size(); ++i)
-            if (misNeighborCount[neighbors[i]] == 1 && m_TreeIdxToJobId[neighbors[i]] != m_TreeIdxToJobId[center])
-                availables[i] = true;
-        while (true) {
-            unsigned int maxHostCount = 0, maxNeighborIdx;
-            for (unsigned int i = 0; i < neighbors.size(); ++i)
-                if (availables[i] && jobIdMap[m_TreeIdxToJobId[neighbors[i]]]->HostCount > maxHostCount) {
-                    maxHostCount = jobIdMap[m_TreeIdxToJobId[neighbors[i]]]->HostCount;
-                    maxNeighborIdx = i;
-                }
-            if (maxHostCount == 0)
-                break;
-            jobIdMap[m_TreeIdxToJobId[neighbors[maxNeighborIdx]]]->SetNextAggrTree(
-                m_AggrTrees[neighbors[maxNeighborIdx]]);
-            availables[maxNeighborIdx] = false;
-            for (unsigned int i = 0; i < neighbors.size(); ++i)
-                if (availables[i] && m_TreeIdxToJobId[neighbors[maxNeighborIdx]] == m_TreeIdxToJobId[neighbors[i]])
-                    availables[i] = false;
+        std::unordered_set<unsigned int> addedJobIds;
+        for (auto neightbor : m_ConflictGraph.GetNeighbors(center)) {
+            auto jobId = m_TreeIdxToJobId[neightbor];
+            if (misNeighborCount[neightbor] != 1 || jobId == m_TreeIdxToJobId[center] || addedJobIds.count(jobId) > 0)
+                continue;
+            addedJobIds.insert(jobId);
+            jobIdMap[jobId]->SetNextAggrTree(m_AggrTrees[neightbor]);
         }
     }
+    finish = std::chrono::high_resolution_clock::now();
+    duration = std::chrono::duration_cast<std::chrono::microseconds>(finish - start).count();
+    if (SHOW_TIME)
+        std::cout << "Find sharing opportunities time: " << duration / 1000.0 << " ms\n";
+
+    if (SHOW_TIME)
+        std::cout << '\n';
 }
