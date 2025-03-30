@@ -2,12 +2,15 @@
 
 #include "fat_tree_resource.hpp"
 #include "job.hpp"
+#include "utils/graph.hpp"
 #include <memory>
 #include <vector>
 
 class SmartTreeBuildingPolicy {
 private:
-    std::unordered_map<unsigned int, std::vector<FatTree::AggrTree>> m_JobToTrees;
+    Graph m_ConflictGraph;
+    std::vector<FatTree::AggrTree> m_AggrTrees;
+    std::vector<unsigned int> m_TreeIdxToJobId;
 
 public:
     const std::optional<unsigned int> MaxTreeCount;
