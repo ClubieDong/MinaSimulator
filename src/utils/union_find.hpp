@@ -6,6 +6,7 @@
 class UnionFind {
 private:
     std::vector<unsigned int> m_Parents;
+    std::vector<unsigned int> m_Rank;
 
 public:
     explicit UnionFind(unsigned int size);
