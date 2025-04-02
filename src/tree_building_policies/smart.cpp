@@ -79,24 +79,22 @@ void SmartTreeBuildingPolicy::operator()(const FatTreeResource &resources,
 
     // Find sharing opportunities
     start = std::chrono::high_resolution_clock::now();
-    std::unordered_set<unsigned int> jobsInMis;
-    for (auto center : mis)
-        jobsInMis.insert(m_TreeIdxToJobId[center]);
     std::vector<unsigned int> misNeighborCount(m_ConflictGraph.GetNodeCount(), 0);
     for (auto center : mis)
         for (auto i : m_ConflictGraph.GetNeighbors(center))
             ++misNeighborCount[i];
     for (auto &job : jobs)
         job->SetNextAggrTree(std::nullopt);
+    std::unordered_set<unsigned int> addedJobIds;
     for (auto center : mis) {
         jobIdMap[m_TreeIdxToJobId[center]]->SetNextAggrTree(m_AggrTrees[center]);
-        std::unordered_set<unsigned int> addedJobIds;
-        for (auto neightbor : m_ConflictGraph.GetNeighbors(center)) {
-            auto jobId = m_TreeIdxToJobId[neightbor];
-            if (misNeighborCount[neightbor] != 1 || jobId == m_TreeIdxToJobId[center] || addedJobIds.count(jobId) > 0)
+        addedJobIds.insert(m_TreeIdxToJobId[center]);
+        for (auto neighbor : m_ConflictGraph.GetNeighbors(center)) {
+            auto jobId = m_TreeIdxToJobId[neighbor];
+            if (misNeighborCount[neighbor] != 1 || addedJobIds.count(jobId) > 0)
                 continue;
+            jobIdMap[jobId]->SetNextAggrTree(m_AggrTrees[neighbor]);
             addedJobIds.insert(jobId);
-            jobIdMap[jobId]->SetNextAggrTree(m_AggrTrees[neightbor]);
         }
     }
     finish = std::chrono::high_resolution_clock::now();
