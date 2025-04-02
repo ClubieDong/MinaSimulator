@@ -1,4 +1,7 @@
 #include "allocation_controller.hpp"
+#include "data.hpp"
+#include "host_allocation_policies/first.hpp"
+#include "tree_building_policies/first.hpp"
 #include "utils/union_find.hpp"
 #include <cassert>
 #include <chrono>
@@ -246,4 +249,24 @@ SimulationResult AllocationController::RunSimulation(std::optional<double> maxSi
         result.SharpUtilization = result.TotalSharpUsage / (now * switchCount);
     }
     return result;
+}
+
+SimulationResult AllocationController::SharingGroupSimulation(const std::vector<const char *> &modelList,
+                                                              SharingPolicy &&sharingPolicy, double gpuSpeedupRatio,
+                                                              double simulationTime) {
+    FatTree topology({static_cast<unsigned int>(modelList.size() * 2), 1, 1}, {1, 1, 1});
+    FatTreeResource resources(topology, 1, std::nullopt);
+    unsigned int jobIdx = 0;
+    auto getNextJob = [&modelList, gpuSpeedupRatio, &jobIdx]() -> std::unique_ptr<Job> {
+        if (jobIdx >= modelList.size())
+            return nullptr;
+        auto modelInfo = ModelInfoProvider::GetModelInfo(modelList[jobIdx], gpuSpeedupRatio);
+        ++jobIdx;
+        return std::make_unique<Job>(2, std::nullopt, std::move(modelInfo));
+    };
+    FirstHostAllocationPolicy hostAllocationPolicy;
+    FirstTreeBuildingPolicy treeBuildingPolicy(false);
+    AllocationController controller(std::move(resources), std::move(getNextJob), std::move(hostAllocationPolicy),
+                                    std::move(treeBuildingPolicy), std::move(sharingPolicy));
+    return controller.RunSimulation(simulationTime, false);
 }

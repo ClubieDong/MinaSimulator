@@ -7,7 +7,7 @@ static SimulationResult Simulate(std::optional<unsigned int> maxTreeCount) {
         weightList.push_back(weight);
     }
     FatTree topology(16);
-    FatTreeResource resources(topology, std::nullopt, 1);
+    FatTreeResource resources(topology, 1, std::nullopt);
     unsigned int jobCount = 0;
     auto getNextJob = [hostCountList, weightList, &jobCount]() -> std::unique_ptr<Job> {
         if (jobCount >= 2000)
@@ -25,7 +25,7 @@ static SimulationResult Simulate(std::optional<unsigned int> maxTreeCount) {
     };
     SmartHostAllocationPolicy hostAllocationPolicy(0.5);
     SmartTreeBuildingPolicy treeBuildingPolicy(maxTreeCount);
-    GreedySharingPolicy sharingPolicy;
+    SmartSharingPolicy sharingPolicy;
     AllocationController controller(std::move(resources), std::move(getNextJob), std::move(hostAllocationPolicy),
                                     std::move(treeBuildingPolicy), std::move(sharingPolicy));
     return controller.RunSimulation(std::nullopt, true);

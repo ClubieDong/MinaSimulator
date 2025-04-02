@@ -101,4 +101,8 @@ public:
     ~AllocationController();
 
     SimulationResult RunSimulation(std::optional<double> maxSimulationTime, bool showProgress);
+
+    static SimulationResult SharingGroupSimulation(const std::vector<const char *> &modelList,
+                                                   SharingPolicy &&sharingPolicy, double gpuSpeedupRatio,
+                                                   double simulationTime);
 };

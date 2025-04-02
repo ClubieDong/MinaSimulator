@@ -32,7 +32,7 @@ static SimulationResult Simulate(bool enableMina, unsigned int hostTraceId) {
         sharingPolicy = SmartSharingPolicy();
     } else {
         hostAllocationPolicy = FirstHostAllocationPolicy();
-        treeBuildingPolicy = FirstTreeBuildingPolicy();
+        treeBuildingPolicy = FirstTreeBuildingPolicy(true);
         sharingPolicy = GreedySharingPolicy();
     }
     AllocationController controller(std::move(resources), std::move(getNextJob), std::move(hostAllocationPolicy),

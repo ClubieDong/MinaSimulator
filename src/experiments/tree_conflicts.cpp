@@ -3,7 +3,7 @@
 void TestTreeConflicts() {
     Job::CalcTransmissionDuration = DurationCaculator(2'000'000'000, 1.0, 0.000'05);
     FatTree topology(16);
-    FatTreeResource resources(topology, 1, 1); // TODO
+    FatTreeResource resources(topology, 1, std::nullopt);
     unsigned int jobCount = 0;
     auto getNextJob = [&jobCount]() -> std::unique_ptr<Job> {
         if (jobCount >= 20000)
@@ -20,7 +20,7 @@ void TestTreeConflicts() {
         return std::make_unique<Job>(hostCount, stepCount, ModelInfoProvider::GetModelInfo(model, 1.0));
     };
     FirstHostAllocationPolicy hostAllocationPolicy;
-    FirstTreeBuildingPolicy treeBuildingPolicy;
+    FirstTreeBuildingPolicy treeBuildingPolicy(true);
     GreedySharingPolicy sharingPolicy;
     AllocationController controller(std::move(resources), std::move(getNextJob), std::move(hostAllocationPolicy),
                                     std::move(treeBuildingPolicy), std::move(sharingPolicy));
