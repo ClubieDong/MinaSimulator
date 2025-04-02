@@ -2,11 +2,12 @@ import json
 import math
 import numpy as np
 from tqdm import trange
+from scipy import stats
 from matplotlib import pyplot as plt
 
 file_path = "results/tree_conflict_trace.json"
 figure_path = "figures/conflicts-vs-fragments.pdf"
-sliding_window_size = 1000
+sliding_window_size = 500
 
 with open(file_path, "r") as f:
     data = json.load(f)
@@ -29,9 +30,12 @@ total_frags = allocated_frags + available_frags
 tree_conflicts = np.array(data["tree_conflicts"])
 tree_conflicts = np.convolve(tree_conflicts, np.ones(sliding_window_size)/sliding_window_size, mode="valid")
 
-x_range = x_range[:18000]
-total_frags = total_frags[:18000]
-tree_conflicts = tree_conflicts[:18000]
+x_range = x_range[:3500]
+total_frags = total_frags[:3500]
+tree_conflicts = tree_conflicts[:3500]
+
+pearson_r, pearson_p = stats.pearsonr(total_frags, tree_conflicts)
+print(f"Pearson correlation: {pearson_r}, p-value: {pearson_p}")
 
 plt.rcParams["font.family"] = ["Times New Roman", "SimSong"]
 plt.rcParams["font.size"] = 12

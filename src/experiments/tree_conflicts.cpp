@@ -6,7 +6,7 @@ void TestTreeConflicts() {
     FatTreeResource resources(topology, 1, std::nullopt);
     unsigned int jobCount = 0;
     auto getNextJob = [&jobCount]() -> std::unique_ptr<Job> {
-        if (jobCount >= 20000)
+        if (jobCount >= 5000)
             return nullptr;
         ++jobCount;
         auto model = "traces/opt-350m-16.json";
