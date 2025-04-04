@@ -11,14 +11,14 @@
 
 void to_json(nlohmann::json &json, const SimulationResult &result) {
     json = {
+        {"JCTScore", result.JCTScore()},
+        {"JCTScoreWeighted", result.JCTScoreWeighted()},
+        {"SharpRatio", result.SharpRatio()},
+        {"SharpRatioWeighted", result.SharpRatioWeighted()},
         {"FinishedJobCount", result.FinishedJobCount},
         {"SimulatedTime", result.SimulatedTime},
         {"ClusterUtilization", result.ClusterUtilization},
         {"SharpUtilization", result.SharpUtilization},
-        {"JCTScore", result.JCTScore},
-        {"JCTScoreWeighted", result.JCTScoreWeighted},
-        {"SharpRatio", result.SharpRatio},
-        {"SharpRatioWeighted", result.SharpRatioWeighted},
         {"TotalJCT", result.TotalJCT},
         {"TotalJCTWeighted", result.TotalJCTWeighted},
         {"TotalJCTWithSharp", result.TotalJCTWithSharp},
@@ -38,14 +38,14 @@ void to_json(nlohmann::json &json, const SimulationResult &result) {
 
 std::ostream &operator<<(std::ostream &os, const SimulationResult &result) {
     os << std::setprecision(6) << std::fixed;
+    os << "  JCTScore:                     " << result.JCTScore() << '\n';
+    os << "  JCTScoreWeighted:             " << result.JCTScoreWeighted() << '\n';
+    os << "  SharpRatio:                   " << result.SharpRatio() * 100 << "%\n";
+    os << "  SharpRatioWeighted:           " << result.SharpRatioWeighted() * 100 << "%\n";
     os << "  FinishedJobCount:             " << result.FinishedJobCount << '\n';
     os << "  SimulatedTime:                " << result.SimulatedTime << " sec\n";
     os << "  ClusterUtilization:           " << result.ClusterUtilization * 100 << "%\n";
     os << "  SharpUtilization:             " << result.SharpUtilization * 100 << "%\n";
-    os << "  JCTScore:                     " << result.JCTScore << '\n';
-    os << "  JCTScoreWeighted:             " << result.JCTScoreWeighted << '\n';
-    os << "  SharpRatio:                   " << result.SharpRatio * 100 << "%\n";
-    os << "  SharpRatioWeighted:           " << result.SharpRatioWeighted * 100 << "%\n";
     os << "  TotalJCT:                     " << result.TotalJCT << " sec\n";
     os << "  TotalJCTWeighted:             " << result.TotalJCTWeighted << " sec\n";
     os << "  TotalJCTWithSharp:            " << result.TotalJCTWithSharp << " sec\n";
@@ -255,12 +255,6 @@ SimulationResult AllocationController::RunSimulation(std::optional<double> maxSi
     }
     result.SimulatedTime = now;
     result.ClusterUtilization = result.TotalJCTWeighted / (now * m_Resources.Topology->NodesByLayer[0].size());
-    result.JCTScore =
-        (result.TotalJCT - result.TotalJCTWithoutSharp) / (result.TotalJCTWithSharp - result.TotalJCTWithoutSharp);
-    result.JCTScoreWeighted = (result.TotalJCTWeighted - result.TotalJCTWithoutSharpWeighted) /
-                              (result.TotalJCTWithSharpWeighted - result.TotalJCTWithoutSharpWeighted);
-    result.SharpRatio = result.TotalSharpTime / result.TotalJCT;
-    result.SharpRatioWeighted = result.TotalSharpTimeWeighted / result.TotalJCTWeighted;
     result.ConsensusFrequency /= result.TotalJCT;
     if (m_Resources.NodeQuota) {
         const auto &topology = *m_Resources.Topology;

@@ -21,14 +21,6 @@ struct SimulationResult {
     double ClusterUtilization = 0.0;
     // The utilization of all SHARP switches (time in use / total time)
     double SharpUtilization = 0.0;
-    // INA efficiency score, see paper for details
-    double JCTScore = 0.0;
-    // Weighted INA efficiency score, see paper for details
-    double JCTScoreWeighted = 0.0;
-    // INA utilization rate, see paper for details, equals TotalSharpTime / TotalJCT
-    double SharpRatio = 0.0;
-    // Weighted INA utilization rate, see paper for details, equals TotalSharpTimeWeighted / TotalJCTWeighted
-    double SharpRatioWeighted = 0.0;
 
     // The sum of JCT of all jobs, in second
     double TotalJCT = 0.0;
@@ -59,6 +51,21 @@ struct SimulationResult {
     unsigned int SharpEnabledJobCount = 0;
     // The frequency of consensus protocol, in Hz
     double ConsensusFrequency = 0.0;
+
+    // INA efficiency score, see paper for details
+    double JCTScore() const { return (TotalJCT - TotalJCTWithoutSharp) / (TotalJCTWithSharp - TotalJCTWithoutSharp); }
+
+    // Weighted INA efficiency score, see paper for details
+    double JCTScoreWeighted() const {
+        return (TotalJCTWeighted - TotalJCTWithoutSharpWeighted) /
+               (TotalJCTWithSharpWeighted - TotalJCTWithoutSharpWeighted);
+    }
+
+    // INA utilization rate, see paper for details
+    double SharpRatio() const { return TotalSharpTime / TotalJCT; }
+
+    // Weighted INA utilization rate, see paper for details
+    double SharpRatioWeighted() const { return TotalSharpTimeWeighted / TotalJCTWeighted; }
 
     friend void to_json(nlohmann::json &json, const SimulationResult &result);
     friend std::ostream &operator<<(std::ostream &os, const SimulationResult &result);

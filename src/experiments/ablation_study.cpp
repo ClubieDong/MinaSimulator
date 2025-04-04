@@ -46,10 +46,10 @@ static SimulationResult Simulate(bool useSmartHostAllocationPolicy, bool useSmar
 void TestAblationStudy() {
     auto printResult = [](std::string_view name, const SimulationResult &result) {
         std::cout << name << ": ";
-        std::cout << result.JCTScore << ' ';
-        std::cout << result.JCTScoreWeighted << ' ';
-        std::cout << result.SharpRatio << ' ';
-        std::cout << result.SharpRatioWeighted << ' ';
+        std::cout << result.JCTScore() << ' ';
+        std::cout << result.JCTScoreWeighted() << ' ';
+        std::cout << result.SharpRatio() << ' ';
+        std::cout << result.SharpRatioWeighted() << ' ';
         std::cout << result.SharpUtilization << ' ';
         std::cout << result.ClusterUtilization << ' ';
         std::cout << result.SharpUtilization << '\n';

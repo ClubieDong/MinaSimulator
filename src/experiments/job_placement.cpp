@@ -65,7 +65,7 @@ void TestJobPlacement() {
     nlohmann::json jsonResult;
     for (unsigned int i = 0; i < 8; ++i) {
         // TODO: or weighted JCT score?
-        std::array res = {results[i * 3 + 0].JCTScore, results[i * 3 + 1].JCTScore, results[i * 3 + 2].JCTScore};
+        std::array res = {results[i * 3 + 0].JCTScore(), results[i * 3 + 1].JCTScore(), results[i * 3 + 2].JCTScore()};
         jsonResult.push_back(res);
         std::cout << "Ratio=8:" << i + 1 << ": ";
         for (auto j : res)

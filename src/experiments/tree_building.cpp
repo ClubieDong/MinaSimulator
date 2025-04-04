@@ -56,15 +56,15 @@ void TestTreeBuilding() {
         std::cout << "MaxTreeCount=" << idx + 1 << ":\n";
         std::cout << "  HostAllocation: " << timeCostHostAllocation << "ms ";
         std::cout << "  TreeBuilding: " << timeCostTreeBuilding << "ms ";
-        std::cout << "  JCTScore: " << res.JCTScore << ' ';
-        std::cout << "  SharpRatio: " << res.SharpRatio << '\n';
+        std::cout << "  JCTScore: " << res.JCTScore() << ' ';
+        std::cout << "  SharpRatio: " << res.SharpRatio() << '\n';
         std::cout << "  TreeMigrationCount: " << res.TreeMigrationCount << '\n';
         jsonResult.push_back({
             {"MaxTreeCount", idx + 1},
             {"TimeCostHostAllocation", timeCostHostAllocation},
             {"TimeCostTreeBuilding", timeCostTreeBuilding},
-            {"JCTScore", res.JCTScore},
-            {"SharpRatio", res.SharpRatio},
+            {"JCTScore", res.JCTScore()},
+            {"SharpRatio", res.SharpRatio()},
             {"TreeMigrationCount", res.TreeMigrationCount},
         });
     }

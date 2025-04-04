@@ -13,7 +13,7 @@ void TestSharing() {
             SmartSharingPolicy sharingPolicy;
             auto result = AllocationController::SimulateSharingGroup(jobList, std::move(sharingPolicy), 1000);
             // TODO: or weighted JCT score?
-            resultMat[modelIdx1][modelIdx2] = result.JCTScore;
+            resultMat[modelIdx1][modelIdx2] = result.JCTScore();
         }
     nlohmann::json jsonResult;
     jsonResult["model_list"] = ModelList;
