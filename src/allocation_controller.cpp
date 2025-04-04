@@ -37,7 +37,7 @@ void to_json(nlohmann::json &json, const SimulationResult &result) {
 }
 
 std::ostream &operator<<(std::ostream &os, const SimulationResult &result) {
-    os << std::setprecision(2) << std::fixed;
+    os << std::setprecision(6) << std::fixed;
     os << "  FinishedJobCount:             " << result.FinishedJobCount << '\n';
     os << "  SimulatedTime:                " << result.SimulatedTime << " sec\n";
     os << "  ClusterUtilization:           " << result.ClusterUtilization * 100 << "%\n";
@@ -54,7 +54,7 @@ std::ostream &operator<<(std::ostream &os, const SimulationResult &result) {
     os << "  TotalJCTWithoutSharpWeighted: " << result.TotalJCTWithoutSharpWeighted << " sec\n";
     os << "  TotalSharpTime:               " << result.TotalSharpTime << " sec\n";
     os << "  TotalSharpTimeWeighted:       " << result.TotalSharpTimeWeighted << " sec\n";
-    os << "  TotalSharpUsage:              " << result.TotalSharpUsage * 100 << "%\n";
+    os << "  TotalSharpUsage:              " << result.TotalSharpUsage << " sec\n";
     os << "  TimeCostHostAllocation:       " << result.TimeCostHostAllocation << " ms (wall clock)\n";
     os << "  TimeCostTreeBuilding:         " << result.TimeCostTreeBuilding << " ms (wall clock)\n";
     os << "  TreeMigrationCount:           " << result.TreeMigrationCount << '\n';
@@ -270,15 +270,21 @@ SimulationResult AllocationController::RunSimulation(std::optional<double> maxSi
     return result;
 }
 
-SimulationResult AllocationController::SimulateSharingGroup(const std::vector<const char *> &modelList,
-                                                            SharingPolicy &&sharingPolicy, double simulationTime) {
-    FatTree topology({static_cast<unsigned int>(modelList.size() * 2), 1, 1}, {1, 1, 1});
+SimulationResult
+AllocationController::SimulateSharingGroup(const std::vector<std::pair<unsigned int, std::string_view>> &jobList,
+                                           SharingPolicy &&sharingPolicy, double simulationTime) {
+    // jobList: a list of (hostCount, modelName)
+    unsigned int totalHostCount = 0;
+    for (const auto &[hostCount, _] : jobList)
+        totalHostCount += hostCount;
+    FatTree topology({totalHostCount, 1, 1}, {1, 1, 1});
     FatTreeResource resources(topology, 1, std::nullopt);
-    auto getNextJob = [&modelList, jobCount = 0u]() mutable -> std::unique_ptr<Job> {
-        if (jobCount >= modelList.size())
+    auto getNextJob = [&jobList, jobCount = 0u]() mutable -> std::unique_ptr<Job> {
+        if (jobCount >= jobList.size())
             return nullptr;
         ++jobCount;
-        return std::make_unique<Job>(modelList[jobCount - 1], 2, std::nullopt);
+        auto [hostCount, modelName] = jobList[jobCount - 1];
+        return std::make_unique<Job>(modelName, hostCount, std::nullopt);
     };
     FirstHostAllocationPolicy hostAllocationPolicy;
     FirstTreeBuildingPolicy treeBuildingPolicy(false);

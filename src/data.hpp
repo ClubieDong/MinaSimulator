@@ -21,10 +21,10 @@ public:
 class ModelInfoProvider {
 private:
     inline static std::mutex m_CacheMtx;
-    inline static std::unordered_map<const char *, nlohmann::json> m_ModelInfoCache;
+    inline static std::unordered_map<std::string_view, nlohmann::json> m_ModelInfoCache;
 
 public:
     inline static double GPUSpeedupRatio = 1.0;
 
-    static std::vector<CommOpGroup> GetModelInfo(const char *modelName);
+    static std::vector<CommOpGroup> GetModelInfo(std::string_view modelName);
 };

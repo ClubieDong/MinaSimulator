@@ -20,7 +20,7 @@ void TestSharingOverhead() {
         std::uniform_int_distribution<std::size_t> randomModel(0, ModelList.size() - 1);
         std::discrete_distribution<std::size_t> randomHostCount(weightList.cbegin(), weightList.cend());
         std::uniform_int_distribution<std::size_t> randomStepCount(0, stepCountList.size() - 1);
-        auto model = ModelList[randomModel(engine)];
+        std::string_view model = ModelList[randomModel(engine)];
         auto hostCount = hostCountList[randomHostCount(engine)];
         auto stepCount = stepCountList[randomStepCount(engine)];
         return std::make_unique<Job>(model, hostCount, stepCount);

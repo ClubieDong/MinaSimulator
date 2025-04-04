@@ -28,8 +28,8 @@ Tracer::~Tracer() {
     file << m_RecordedTraces;
 }
 
-void Tracer::RecordEvent(std::string &&name, const char *category, bool isBegin, unsigned int pid, unsigned int tid,
-                         double time) {
+void Tracer::RecordEvent(std::string &&name, std::string_view category, bool isBegin, unsigned int pid,
+                         unsigned int tid, double time) {
     if (!EnableRecording)
         return;
     m_RecordedTraces.push_back({

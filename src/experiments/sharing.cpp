@@ -8,9 +8,10 @@ void TestSharing() {
         for (unsigned int modelIdx2 = 0; modelIdx2 < ModelList.size(); ++modelIdx2) {
             std::cout << "Running simulation #" << modelIdx1 * ModelList.size() + modelIdx2 + 1 << " of "
                       << ModelList.size() * ModelList.size() << '\n';
-            std::vector<const char *> modelList = {ModelList[modelIdx1], ModelList[modelIdx2]};
+            std::vector<std::pair<unsigned int, std::string_view>> jobList = {{2, ModelList[modelIdx1]},
+                                                                              {2, ModelList[modelIdx2]}};
             SmartSharingPolicy sharingPolicy;
-            auto result = AllocationController::SimulateSharingGroup(modelList, std::move(sharingPolicy), 1000);
+            auto result = AllocationController::SimulateSharingGroup(jobList, std::move(sharingPolicy), 1000);
             // TODO: or weighted JCT score?
             resultMat[modelIdx1][modelIdx2] = result.JCTScore;
         }

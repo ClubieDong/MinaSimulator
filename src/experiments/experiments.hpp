@@ -29,17 +29,17 @@
 #include <unordered_map>
 #include <vector>
 
-inline static std::vector<const char *> AllModelList = {
+inline static std::vector<std::string> AllModelList = {
     "traces/opt-125m-4.json",    "traces/opt-125m-16.json", "traces/opt-350m-4.json",   "traces/opt-350m-16.json",
     "traces/opt-1.3b-4.json",    "traces/bert-base-4.json", "traces/bert-base-16.json", "traces/bert-large-4.json",
     "traces/bert-large-16.json", "traces/vit-base-4.json",  "traces/vit-base-16.json",  "traces/vit-large-4.json",
     "traces/vit-large-16.json",
 };
-inline static std::vector<const char *> ModelListBs4 = {
+inline static std::vector<std::string> ModelListBs4 = {
     "traces/opt-125m-4.json",   "traces/opt-350m-4.json", "traces/opt-1.3b-4.json",  "traces/bert-base-4.json",
     "traces/bert-large-4.json", "traces/vit-base-4.json", "traces/vit-large-4.json",
 };
-inline static std::vector<const char *> ModelListBs16 = {
+inline static std::vector<std::string> ModelListBs16 = {
     "traces/opt-125m-16.json",   "traces/opt-350m-16.json", "traces/bert-base-16.json",
     "traces/bert-large-16.json", "traces/vit-base-16.json", "traces/vit-large-16.json",
 };

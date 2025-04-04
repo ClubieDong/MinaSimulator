@@ -17,7 +17,7 @@ double Job::CalcStepDuration(bool useSharp) const {
     return stepDuration;
 }
 
-Job::Job(const char *modelName, unsigned int hostCount, std::optional<unsigned int> stepCount)
+Job::Job(std::string_view modelName, unsigned int hostCount, std::optional<unsigned int> stepCount)
     : ID(m_NextID++), ModelName(modelName), HostCount(hostCount), StepCount(stepCount),
       CommOpGroups(ModelInfoProvider::GetModelInfo(ModelName)) {
     StepDurationWithSharp = CalcStepDuration(true);

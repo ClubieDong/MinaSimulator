@@ -18,7 +18,7 @@ public:
 
     ~Tracer();
 
-    void RecordEvent(std::string &&name, const char *category, bool isBegin, unsigned int pid, unsigned int tid,
+    void RecordEvent(std::string &&name, std::string_view category, bool isBegin, unsigned int pid, unsigned int tid,
                      double time);
 
     void RecordBeginJob(double time, const Job &job);

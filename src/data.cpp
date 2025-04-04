@@ -10,13 +10,13 @@ double DurationCaculator::operator()(CommOp::Type opType, unsigned long long mes
     return Latency + messageSize / bandwidth;
 }
 
-std::vector<CommOpGroup> ModelInfoProvider::GetModelInfo(const char *modelInfoPath) {
+std::vector<CommOpGroup> ModelInfoProvider::GetModelInfo(std::string_view modelName) {
     std::scoped_lock lock(m_CacheMtx);
-    if (m_ModelInfoCache.count(modelInfoPath) == 0) {
-        std::ifstream file(modelInfoPath);
-        m_ModelInfoCache[modelInfoPath] = nlohmann::json::parse(file);
+    if (m_ModelInfoCache.count(modelName) == 0) {
+        std::ifstream file(std::string{modelName});
+        m_ModelInfoCache[modelName] = nlohmann::json::parse(file);
     }
-    const auto &modelInfo = m_ModelInfoCache[modelInfoPath];
+    const auto &modelInfo = m_ModelInfoCache[modelName];
     std::vector<CommOpGroup> result(1);
     auto &opGroup = result.front();
     opGroup.SyncTime = modelInfo["duration"].get<double>() / GPUSpeedupRatio;

@@ -112,6 +112,6 @@ public:
 
     SimulationResult RunSimulation(std::optional<double> maxSimulationTime, bool showProgress);
 
-    static SimulationResult SimulateSharingGroup(const std::vector<const char *> &modelList,
+    static SimulationResult SimulateSharingGroup(const std::vector<std::pair<unsigned int, std::string_view>> &jobList,
                                                  SharingPolicy &&sharingPolicy, double simulationTime);
 };
