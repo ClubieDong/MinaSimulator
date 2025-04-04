@@ -1,5 +1,4 @@
 #include "allocation_controller.hpp"
-#include "data.hpp"
 #include "host_allocation_policies/first.hpp"
 #include "tree_building_policies/first.hpp"
 #include "utils/union_find.hpp"
@@ -15,14 +14,19 @@ void to_json(nlohmann::json &json, const SimulationResult &result) {
         {"FinishedJobCount", result.FinishedJobCount},
         {"SimulatedTime", result.SimulatedTime},
         {"ClusterUtilization", result.ClusterUtilization},
-        {"JCTScore", result.JCTScore},
-        {"SharpRatio", result.SharpRatio},
         {"SharpUtilization", result.SharpUtilization},
-        {"TotalHostTime", result.TotalHostTime},
+        {"JCTScore", result.JCTScore},
+        {"JCTScoreWeighted", result.JCTScoreWeighted},
+        {"SharpRatio", result.SharpRatio},
+        {"SharpRatioWeighted", result.SharpRatioWeighted},
         {"TotalJCT", result.TotalJCT},
+        {"TotalJCTWeighted", result.TotalJCTWeighted},
         {"TotalJCTWithSharp", result.TotalJCTWithSharp},
+        {"TotalJCTWithSharpWeighted", result.TotalJCTWithSharpWeighted},
         {"TotalJCTWithoutSharp", result.TotalJCTWithoutSharp},
+        {"TotalJCTWithoutSharpWeighted", result.TotalJCTWithoutSharpWeighted},
         {"TotalSharpTime", result.TotalSharpTime},
+        {"TotalSharpTimeWeighted", result.TotalSharpTimeWeighted},
         {"TotalSharpUsage", result.TotalSharpUsage},
         {"TimeCostHostAllocation", result.TimeCostHostAllocation},
         {"TimeCostTreeBuilding", result.TimeCostTreeBuilding},
@@ -34,23 +38,28 @@ void to_json(nlohmann::json &json, const SimulationResult &result) {
 
 std::ostream &operator<<(std::ostream &os, const SimulationResult &result) {
     os << std::setprecision(2) << std::fixed;
-    os << "  FinishedJobCount:       " << result.FinishedJobCount << '\n';
-    os << "  SimulatedTime:          " << result.SimulatedTime << " sec\n";
-    os << "  ClusterUtilization:     " << result.ClusterUtilization * 100 << "%\n";
-    os << "  JCTScore:               " << result.JCTScore << '\n';
-    os << "  SharpRatio:             " << result.SharpRatio * 100 << "%\n";
-    os << "  SharpUtilization:       " << result.SharpUtilization * 100 << "%\n";
-    os << "  TotalHostTime:          " << result.TotalHostTime << " sec\n";
-    os << "  TotalJCT:               " << result.TotalJCT << " sec\n";
-    os << "  TotalJCTWithSharp:      " << result.TotalJCTWithSharp << " sec\n";
-    os << "  TotalJCTWithoutSharp:   " << result.TotalJCTWithoutSharp << " sec\n";
-    os << "  TotalSharpTime:         " << result.TotalSharpTime << " sec\n";
-    os << "  TotalSharpUsage:        " << result.TotalSharpUsage * 100 << "%\n";
-    os << "  TimeCostHostAllocation: " << result.TimeCostHostAllocation << " ms (wall clock)\n";
-    os << "  TimeCostTreeBuilding:   " << result.TimeCostTreeBuilding << " ms (wall clock)\n";
-    os << "  TreeMigrationCount:     " << result.TreeMigrationCount << '\n';
-    os << "  SharpEnabledJobCount:   " << result.SharpEnabledJobCount << '\n';
-    os << "  ConsensusFrequency:     " << result.ConsensusFrequency << " times per sec\n";
+    os << "  FinishedJobCount:             " << result.FinishedJobCount << '\n';
+    os << "  SimulatedTime:                " << result.SimulatedTime << " sec\n";
+    os << "  ClusterUtilization:           " << result.ClusterUtilization * 100 << "%\n";
+    os << "  SharpUtilization:             " << result.SharpUtilization * 100 << "%\n";
+    os << "  JCTScore:                     " << result.JCTScore << '\n';
+    os << "  JCTScoreWeighted:             " << result.JCTScoreWeighted << '\n';
+    os << "  SharpRatio:                   " << result.SharpRatio * 100 << "%\n";
+    os << "  SharpRatioWeighted:           " << result.SharpRatioWeighted * 100 << "%\n";
+    os << "  TotalJCT:                     " << result.TotalJCT << " sec\n";
+    os << "  TotalJCTWeighted:             " << result.TotalJCTWeighted << " sec\n";
+    os << "  TotalJCTWithSharp:            " << result.TotalJCTWithSharp << " sec\n";
+    os << "  TotalJCTWithSharpWeighted:    " << result.TotalJCTWithSharpWeighted << " sec\n";
+    os << "  TotalJCTWithoutSharp:         " << result.TotalJCTWithoutSharp << " sec\n";
+    os << "  TotalJCTWithoutSharpWeighted: " << result.TotalJCTWithoutSharpWeighted << " sec\n";
+    os << "  TotalSharpTime:               " << result.TotalSharpTime << " sec\n";
+    os << "  TotalSharpTimeWeighted:       " << result.TotalSharpTimeWeighted << " sec\n";
+    os << "  TotalSharpUsage:              " << result.TotalSharpUsage * 100 << "%\n";
+    os << "  TimeCostHostAllocation:       " << result.TimeCostHostAllocation << " ms (wall clock)\n";
+    os << "  TimeCostTreeBuilding:         " << result.TimeCostTreeBuilding << " ms (wall clock)\n";
+    os << "  TreeMigrationCount:           " << result.TreeMigrationCount << '\n';
+    os << "  SharpEnabledJobCount:         " << result.SharpEnabledJobCount << '\n';
+    os << "  ConsensusFrequency:           " << result.ConsensusFrequency << " times per sec\n";
     return os;
 }
 
@@ -197,11 +206,14 @@ SimulationResult AllocationController::RunSimulation(std::optional<double> maxSi
         if (jobFinished) {
             assert(job->StepCount);
             ++result.FinishedJobCount;
-            result.TotalHostTime += (job->GetFinishTime() - job->GetStartTime()) * job->HostCount;
             result.TotalJCT += job->GetFinishTime() - job->GetStartTime();
+            result.TotalJCTWeighted += (job->GetFinishTime() - job->GetStartTime()) * job->HostCount;
             result.TotalJCTWithSharp += job->StepDurationWithSharp * *job->StepCount;
+            result.TotalJCTWithSharpWeighted += job->StepDurationWithSharp * *job->StepCount * job->HostCount;
             result.TotalJCTWithoutSharp += job->StepDurationWithoutSharp * *job->StepCount;
+            result.TotalJCTWithoutSharpWeighted += job->StepDurationWithoutSharp * *job->StepCount * job->HostCount;
             result.TotalSharpTime += job->GetDurationWithSharp();
+            result.TotalSharpTimeWeighted += job->GetDurationWithSharp() * job->HostCount;
             result.TreeMigrationCount += job->GetTreeMigrationCount();
             result.ConsensusFrequency += job->GetConsensusCount();
             if (m_Resources.NodeQuota) {
@@ -223,11 +235,15 @@ SimulationResult AllocationController::RunSimulation(std::optional<double> maxSi
     if (showProgress)
         ShowProgress(now, true);
     for (const auto &job : m_RunningJobs) {
-        result.TotalHostTime += (now - job->GetStartTime()) * job->HostCount;
         result.TotalJCT += job->GetCurrentGroupStartTime() - job->GetStartTime();
+        result.TotalJCTWeighted += (job->GetCurrentGroupStartTime() - job->GetStartTime()) * job->HostCount;
         result.TotalJCTWithSharp += job->StepDurationWithSharp * job->GetCurrentStepIdx();
+        result.TotalJCTWithSharpWeighted += job->StepDurationWithSharp * job->GetCurrentStepIdx() * job->HostCount;
         result.TotalJCTWithoutSharp += job->StepDurationWithoutSharp * job->GetCurrentStepIdx();
+        result.TotalJCTWithoutSharpWeighted +=
+            job->StepDurationWithoutSharp * job->GetCurrentStepIdx() * job->HostCount;
         result.TotalSharpTime += job->GetDurationWithSharp();
+        result.TotalSharpTimeWeighted += job->GetDurationWithSharp() * job->HostCount;
         result.TreeMigrationCount += job->GetTreeMigrationCount();
         if (m_Resources.NodeQuota) {
             const auto &aggrTree = job->GetCurrentAggrTree();
@@ -238,10 +254,13 @@ SimulationResult AllocationController::RunSimulation(std::optional<double> maxSi
         }
     }
     result.SimulatedTime = now;
-    result.ClusterUtilization = result.TotalHostTime / (now * m_Resources.Topology->NodesByLayer[0].size());
+    result.ClusterUtilization = result.TotalJCTWeighted / (now * m_Resources.Topology->NodesByLayer[0].size());
     result.JCTScore =
         (result.TotalJCT - result.TotalJCTWithoutSharp) / (result.TotalJCTWithSharp - result.TotalJCTWithoutSharp);
+    result.JCTScoreWeighted = (result.TotalJCTWeighted - result.TotalJCTWithoutSharpWeighted) /
+                              (result.TotalJCTWithSharpWeighted - result.TotalJCTWithoutSharpWeighted);
     result.SharpRatio = result.TotalSharpTime / result.TotalJCT;
+    result.SharpRatioWeighted = result.TotalSharpTimeWeighted / result.TotalJCTWeighted;
     result.ConsensusFrequency /= result.TotalJCT;
     if (m_Resources.NodeQuota) {
         const auto &topology = *m_Resources.Topology;
@@ -251,18 +270,15 @@ SimulationResult AllocationController::RunSimulation(std::optional<double> maxSi
     return result;
 }
 
-SimulationResult AllocationController::SharingGroupSimulation(const std::vector<const char *> &modelList,
-                                                              SharingPolicy &&sharingPolicy, double gpuSpeedupRatio,
-                                                              double simulationTime) {
+SimulationResult AllocationController::SimulateSharingGroup(const std::vector<const char *> &modelList,
+                                                            SharingPolicy &&sharingPolicy, double simulationTime) {
     FatTree topology({static_cast<unsigned int>(modelList.size() * 2), 1, 1}, {1, 1, 1});
     FatTreeResource resources(topology, 1, std::nullopt);
-    unsigned int jobIdx = 0;
-    auto getNextJob = [&modelList, gpuSpeedupRatio, &jobIdx]() -> std::unique_ptr<Job> {
-        if (jobIdx >= modelList.size())
+    auto getNextJob = [&modelList, jobCount = 0u]() mutable -> std::unique_ptr<Job> {
+        if (jobCount >= modelList.size())
             return nullptr;
-        auto modelInfo = ModelInfoProvider::GetModelInfo(modelList[jobIdx], gpuSpeedupRatio);
-        ++jobIdx;
-        return std::make_unique<Job>(2, std::nullopt, std::move(modelInfo));
+        ++jobCount;
+        return std::make_unique<Job>(modelList[jobCount - 1], 2, std::nullopt);
     };
     FirstHostAllocationPolicy hostAllocationPolicy;
     FirstTreeBuildingPolicy treeBuildingPolicy(false);

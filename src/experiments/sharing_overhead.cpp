@@ -2,6 +2,7 @@
 
 void TestSharingOverhead() {
     Job::CalcTransmissionDuration = DurationCaculator(12'500'000'000, 2.0, 0.000'05);
+    ModelInfoProvider::GPUSpeedupRatio = 1.0;
     SharingGroup::RecordSharingOverhead = true;
     std::vector<unsigned int> hostCountList, weightList;
     for (auto [hostCount, weight] : HostCountTraces[0]) {
@@ -10,8 +11,7 @@ void TestSharingOverhead() {
     }
     FatTree topology(16);
     FatTreeResource resources(topology, std::nullopt, 1);
-    unsigned int jobCount = 0;
-    auto getNextJob = [hostCountList, weightList, &jobCount]() -> std::unique_ptr<Job> {
+    auto getNextJob = [hostCountList, weightList, jobCount = 0u]() mutable -> std::unique_ptr<Job> {
         if (jobCount >= 2000)
             return nullptr;
         ++jobCount;
@@ -23,7 +23,7 @@ void TestSharingOverhead() {
         auto model = ModelList[randomModel(engine)];
         auto hostCount = hostCountList[randomHostCount(engine)];
         auto stepCount = stepCountList[randomStepCount(engine)];
-        return std::make_unique<Job>(hostCount, stepCount, ModelInfoProvider::GetModelInfo(model, 1.0));
+        return std::make_unique<Job>(model, hostCount, stepCount);
     };
     SmartHostAllocationPolicy hostAllocationPolicy(0.5);
     SmartTreeBuildingPolicy treeBuildingPolicy(5);

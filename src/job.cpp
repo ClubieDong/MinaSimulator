@@ -1,4 +1,5 @@
 #include "job.hpp"
+#include "data.hpp"
 #include "utils/trace.hpp"
 #include <cassert>
 
@@ -16,8 +17,9 @@ double Job::CalcStepDuration(bool useSharp) const {
     return stepDuration;
 }
 
-Job::Job(unsigned int hostCount, std::optional<unsigned int> stepCount, std::vector<CommOpGroup> &&commOpGroups)
-    : ID(m_NextID++), HostCount(hostCount), StepCount(stepCount), CommOpGroups(std::move(commOpGroups)) {
+Job::Job(const char *modelName, unsigned int hostCount, std::optional<unsigned int> stepCount)
+    : ID(m_NextID++), ModelName(modelName), HostCount(hostCount), StepCount(stepCount),
+      CommOpGroups(ModelInfoProvider::GetModelInfo(ModelName)) {
     StepDurationWithSharp = CalcStepDuration(true);
     StepDurationWithoutSharp = CalcStepDuration(false);
 }

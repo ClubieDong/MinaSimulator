@@ -8,8 +8,7 @@ static SimulationResult Simulate(const FatTree &topology,
         weightList.push_back(weight);
     }
     FatTreeResource resources(topology, std::nullopt, 1);
-    unsigned int jobCount = 0;
-    auto getNextJob = [hostCountList, weightList, &jobCount]() -> std::unique_ptr<Job> {
+    auto getNextJob = [hostCountList, weightList, jobCount = 0u]() mutable -> std::unique_ptr<Job> {
         if (jobCount >= 2000)
             return nullptr;
         ++jobCount;
@@ -21,7 +20,7 @@ static SimulationResult Simulate(const FatTree &topology,
         auto model = ModelList[randomModel(engine)];
         auto hostCount = hostCountList[randomHostCount(engine)];
         auto stepCount = stepCountList[randomStepCount(engine)];
-        return std::make_unique<Job>(hostCount, stepCount, ModelInfoProvider::GetModelInfo(model, 1.0));
+        return std::make_unique<Job>(model, hostCount, stepCount);
     };
     SmartTreeBuildingPolicy treeBuildingPolicy(5);
     GreedySharingPolicy sharingPolicy;
@@ -32,6 +31,7 @@ static SimulationResult Simulate(const FatTree &topology,
 
 void TestJobPlacement() {
     Job::CalcTransmissionDuration = DurationCaculator(12'500'000'000, 2.0, 0.000'05);
+    ModelInfoProvider::GPUSpeedupRatio = 1.0;
     std::array ft = {
         FatTree({8, 8, 16}, {1, 1, 1}), FatTree({8, 8, 16}, {1, 2, 2}), FatTree({8, 8, 16}, {1, 3, 3}),
         FatTree({8, 8, 16}, {1, 4, 4}), FatTree({8, 8, 16}, {1, 5, 5}), FatTree({8, 8, 16}, {1, 6, 6}),
@@ -64,9 +64,8 @@ void TestJobPlacement() {
     std::cout << std::setprecision(3) << std::fixed;
     nlohmann::json jsonResult;
     for (unsigned int i = 0; i < 8; ++i) {
-        std::array res = {results[i * 3 + 0].JCTScore,
-                          results[i * 3 + 1].JCTScore,
-                          results[i * 3 + 2].JCTScore};
+        // TODO: or weighted JCT score?
+        std::array res = {results[i * 3 + 0].JCTScore, results[i * 3 + 1].JCTScore, results[i * 3 + 2].JCTScore};
         jsonResult.push_back(res);
         std::cout << "Ratio=8:" << i + 1 << ": ";
         for (auto j : res)

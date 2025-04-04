@@ -8,8 +8,7 @@ static SimulationResult Simulate(std::optional<unsigned int> maxTreeCount) {
     }
     FatTree topology(16);
     FatTreeResource resources(topology, 1, std::nullopt);
-    unsigned int jobCount = 0;
-    auto getNextJob = [hostCountList, weightList, &jobCount]() -> std::unique_ptr<Job> {
+    auto getNextJob = [hostCountList, weightList, jobCount = 0u]() mutable -> std::unique_ptr<Job> {
         if (jobCount >= 2000)
             return nullptr;
         ++jobCount;
@@ -21,7 +20,7 @@ static SimulationResult Simulate(std::optional<unsigned int> maxTreeCount) {
         auto model = ModelList[randomModel(engine)];
         auto hostCount = hostCountList[randomHostCount(engine)];
         auto stepCount = stepCountList[randomStepCount(engine)];
-        return std::make_unique<Job>(hostCount, stepCount, ModelInfoProvider::GetModelInfo(model, 1.0));
+        return std::make_unique<Job>(model, hostCount, stepCount);
     };
     SmartHostAllocationPolicy hostAllocationPolicy(0.5);
     SmartTreeBuildingPolicy treeBuildingPolicy(maxTreeCount);
@@ -33,18 +32,19 @@ static SimulationResult Simulate(std::optional<unsigned int> maxTreeCount) {
 
 void TestTreeBuilding() {
     Job::CalcTransmissionDuration = DurationCaculator(12'500'000'000, 2.0, 0.000'05);
-    auto results = Parallel::Run<SimulationResult>(
-        [] { return Simulate(1); },
-        [] { return Simulate(2); },
-        [] { return Simulate(3); },
-        [] { return Simulate(4); },
-        [] { return Simulate(5); },
-        [] { return Simulate(6); },
-        [] { return Simulate(7); },
-        [] { return Simulate(8); },
-        [] { return Simulate(9); },
-        [] { return Simulate(10); },
-        [] { return Simulate(std::nullopt); }
+    ModelInfoProvider::GPUSpeedupRatio = 1.0;
+    auto results = Parallel::Run<SimulationResult>( //
+        [] { return Simulate(1); },                 //
+        [] { return Simulate(2); },                 //
+        [] { return Simulate(3); },                 //
+        [] { return Simulate(4); },                 //
+        [] { return Simulate(5); },                 //
+        [] { return Simulate(6); },                 //
+        [] { return Simulate(7); },                 //
+        [] { return Simulate(8); },                 //
+        [] { return Simulate(9); },                 //
+        [] { return Simulate(10); },                //
+        [] { return Simulate(std::nullopt); }       //
     );
     nlohmann::json jsonResult;
     std::cout << std::setprecision(6) << std::fixed;
@@ -52,6 +52,7 @@ void TestTreeBuilding() {
         const auto &res = results[idx];
         auto timeCostHostAllocation = res.TimeCostHostAllocation / res.FinishedJobCount;
         auto timeCostTreeBuilding = res.TimeCostTreeBuilding / res.FinishedJobCount;
+        // TODO: or weighted JCT score?
         std::cout << "MaxTreeCount=" << idx + 1 << ":\n";
         std::cout << "  HostAllocation: " << timeCostHostAllocation << "ms ";
         std::cout << "  TreeBuilding: " << timeCostTreeBuilding << "ms ";

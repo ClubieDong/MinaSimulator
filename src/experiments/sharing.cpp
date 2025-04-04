@@ -2,6 +2,7 @@
 
 void TestSharing() {
     Job::CalcTransmissionDuration = DurationCaculator(12'500'000'000, 1.5, 0.000'05);
+    ModelInfoProvider::GPUSpeedupRatio = 1.5;
     std::vector<std::vector<double>> resultMat(ModelList.size(), std::vector(ModelList.size(), 0.0));
     for (unsigned int modelIdx1 = 0; modelIdx1 < ModelList.size(); ++modelIdx1)
         for (unsigned int modelIdx2 = 0; modelIdx2 < ModelList.size(); ++modelIdx2) {
@@ -9,7 +10,8 @@ void TestSharing() {
                       << ModelList.size() * ModelList.size() << '\n';
             std::vector<const char *> modelList = {ModelList[modelIdx1], ModelList[modelIdx2]};
             SmartSharingPolicy sharingPolicy;
-            auto result = AllocationController::SharingGroupSimulation(modelList, std::move(sharingPolicy), 1.5, 1000);
+            auto result = AllocationController::SimulateSharingGroup(modelList, std::move(sharingPolicy), 1000);
+            // TODO: or weighted JCT score?
             resultMat[modelIdx1][modelIdx2] = result.JCTScore;
         }
     nlohmann::json jsonResult;

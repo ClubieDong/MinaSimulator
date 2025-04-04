@@ -15,28 +15,38 @@
 struct SimulationResult {
     // The number of finished jobs
     unsigned int FinishedJobCount = 0;
-    // Total simulation time, in second (simulation)
-    double SimulatedTime;
+    // Total simulation time, in second
+    double SimulatedTime = 0.0;
     // The utilization of all hosts (time in use / total time)
-    double ClusterUtilization;
-    // INA efficiency score, see paper for details
-    double JCTScore;
-    // INA utilization rate, see paper for details, equals TotalSharpTime / TotalJCT
-    double SharpRatio;
+    double ClusterUtilization = 0.0;
     // The utilization of all SHARP switches (time in use / total time)
     double SharpUtilization = 0.0;
+    // INA efficiency score, see paper for details
+    double JCTScore = 0.0;
+    // Weighted INA efficiency score, see paper for details
+    double JCTScoreWeighted = 0.0;
+    // INA utilization rate, see paper for details, equals TotalSharpTime / TotalJCT
+    double SharpRatio = 0.0;
+    // Weighted INA utilization rate, see paper for details, equals TotalSharpTimeWeighted / TotalJCTWeighted
+    double SharpRatioWeighted = 0.0;
 
-    // The total time of all hosts running jobs, in second (simulation)
-    double TotalHostTime = 0.0;
-    // The sum of JCT of all jobs, in second (simulation)
+    // The sum of JCT of all jobs, in second
     double TotalJCT = 0.0;
-    // The sum of JCT of all jobs with SHARP enabled, in second (simulation)
+    // The sum of weighted JCT of all jobs, in second
+    double TotalJCTWeighted = 0.0;
+    // The expected sum of JCT of all jobs with all AllReduce using SHARP, in second
     double TotalJCTWithSharp = 0.0;
-    // The sum of JCT of all jobs with SHARP disabled, in second (simulation)
+    // The expected sum of weighted JCT of all jobs with all AllReduce using SHARP, in second
+    double TotalJCTWithSharpWeighted = 0.0;
+    // The expected sum of JCT of all jobs with all AllReduce not using SHARP, in second
     double TotalJCTWithoutSharp = 0.0;
-    // The expected sum of JCT with all AllReduce's of all jobs using SHARP, in second (simulation)
+    // The expected sum of weighted JCT of all jobs with all AllReduce not using SHARP, in second
+    double TotalJCTWithoutSharpWeighted = 0.0;
+    // The sum of the time of all jobs that SHARP is enabled, in second
     double TotalSharpTime = 0.0;
-    // The expected sum of JCT with all AllReduce's of all jobs not using SHARP, in second (simulation)
+    // The weighted sum of the time of all jobs that SHARP is enabled, in second
+    double TotalSharpTimeWeighted = 0.0;
+    // The sum of the time of all switches that SHARP is enabled, in second
     double TotalSharpUsage = 0.0;
 
     // The profiled time spent on host allocation, in millisecond (wall clock)
@@ -102,7 +112,6 @@ public:
 
     SimulationResult RunSimulation(std::optional<double> maxSimulationTime, bool showProgress);
 
-    static SimulationResult SharingGroupSimulation(const std::vector<const char *> &modelList,
-                                                   SharingPolicy &&sharingPolicy, double gpuSpeedupRatio,
-                                                   double simulationTime);
+    static SimulationResult SimulateSharingGroup(const std::vector<const char *> &modelList,
+                                                 SharingPolicy &&sharingPolicy, double simulationTime);
 };

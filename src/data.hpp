@@ -24,5 +24,7 @@ private:
     inline static std::unordered_map<const char *, nlohmann::json> m_ModelInfoCache;
 
 public:
-    static std::vector<CommOpGroup> GetModelInfo(const char *modelName, double gpuSpeedupRatio);
+    inline static double GPUSpeedupRatio = 1.0;
+
+    static std::vector<CommOpGroup> GetModelInfo(const char *modelName);
 };

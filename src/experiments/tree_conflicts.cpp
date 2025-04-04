@@ -2,10 +2,10 @@
 
 void TestTreeConflicts() {
     Job::CalcTransmissionDuration = DurationCaculator(2'000'000'000, 1.0, 0.000'05);
+    ModelInfoProvider::GPUSpeedupRatio = 1.0;
     FatTree topology(16);
     FatTreeResource resources(topology, 1, std::nullopt);
-    unsigned int jobCount = 0;
-    auto getNextJob = [&jobCount]() -> std::unique_ptr<Job> {
+    auto getNextJob = [jobCount = 0u]() mutable -> std::unique_ptr<Job> {
         if (jobCount >= 5000)
             return nullptr;
         ++jobCount;
@@ -17,7 +17,7 @@ void TestTreeConflicts() {
         std::uniform_int_distribution<std::size_t> randomStepCount(0, stepCountList.size() - 1);
         auto hostCount = hostCountList[randomHostCount(engine)];
         auto stepCount = stepCountList[randomStepCount(engine)];
-        return std::make_unique<Job>(hostCount, stepCount, ModelInfoProvider::GetModelInfo(model, 1.0));
+        return std::make_unique<Job>(model, hostCount, stepCount);
     };
     FirstHostAllocationPolicy hostAllocationPolicy;
     FirstTreeBuildingPolicy treeBuildingPolicy(true);

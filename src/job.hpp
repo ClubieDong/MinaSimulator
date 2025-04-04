@@ -86,6 +86,7 @@ public:
     inline static std::function<double(CommOp::Type, unsigned long long, bool, unsigned int)> CalcTransmissionDuration;
 
     const unsigned int ID;
+    const char *const ModelName;
     const unsigned int HostCount;
     const std::optional<unsigned int> StepCount;
     const std::vector<CommOpGroup> CommOpGroups;
@@ -93,8 +94,7 @@ public:
     double StepDurationWithSharp;
     double StepDurationWithoutSharp;
 
-    explicit Job(unsigned int hostCount, std::optional<unsigned int> stepCount,
-                 std::vector<CommOpGroup> &&commOpGroups);
+    explicit Job(const char *modelName, unsigned int hostCount, std::optional<unsigned int> stepCount);
 
     // Returns the time of the next event.
     double GetNextEvent(double now) const;
