@@ -46,13 +46,15 @@ static SimulationResult Simulate(bool useSmartHostAllocationPolicy, bool useSmar
 void TestAblationStudy() {
     Job::CalcTransmissionDuration = DurationCaculator(12'500'000'000, 2.0, 0.000'05);
     ModelInfoProvider::GPUSpeedupRatio = 1.0;
-    auto printResult = [](std::string_view name, const SimulationResult &result) {
+    auto printResult = [](std::string_view name, const SimulationResult &result, const SimulationResult &baseline) {
+        std::cout << std::setprecision(4) << std::fixed;
         std::cout << name << ": ";
-        std::cout << result.JCTScore() << ' ';
-        std::cout << result.JCTScoreWeighted() << ' ';
-        std::cout << result.SharpRatio() << ' ';
-        std::cout << result.SharpRatioWeighted() << ' ';
-        std::cout << result.SharpUtilization << '\n';
+        std::cout << "JCTScoreWeighted=" << result.JCTScoreWeighted() << '('
+                  << result.JCTScoreWeighted() - baseline.JCTScoreWeighted() << ") ";
+        std::cout << "SharpRatioWeighted=" << result.SharpRatioWeighted() << '('
+                  << result.SharpRatioWeighted() - baseline.SharpRatioWeighted() << ") ";
+        std::cout << "SharpUtilization=" << result.SharpUtilization << '('
+                  << result.SharpUtilization - baseline.SharpUtilization << ")\n";
     };
 
     auto results = Parallel::Run<SimulationResult>(   //
@@ -66,17 +68,19 @@ void TestAblationStudy() {
         [] { return Simulate(true, true, true); }     //
     );
 
-    std::cout << std::setprecision(6) << std::fixed;
-    printResult("000", results[0]);
-    printResult("100", results[4]);
-    printResult("110", results[6]);
-    printResult("111", results[7]);
+    printResult("000", results[0], results[0]);
+    printResult("100", results[4], results[0]);
+    printResult("110", results[6], results[4]);
+    printResult("111", results[7], results[6]);
     std::cout << '\n';
-    printResult("011", results[3]);
-    printResult("101", results[5]);
-    printResult("110", results[6]);
+    printResult("011", results[3], results[7]);
+    printResult("101", results[5], results[7]);
+    printResult("110", results[6], results[7]);
     std::cout << '\n';
-    printResult("100", results[4]);
-    printResult("010", results[2]);
-    printResult("001", results[1]);
+    printResult("100", results[4], results[0]);
+    printResult("010", results[2], results[0]);
+    printResult("001", results[1], results[0]);
+
+    std::ofstream file("results/ablation_study.json");
+    file << nlohmann::json(results);
 }

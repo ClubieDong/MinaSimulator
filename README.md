@@ -62,7 +62,7 @@ build/mina_sim large-scale-simulation
 python scripts/visualize_large_scale_simulation.py
 ```
 
-### Ablation Study
+### [Done] Ablation Study
 
 For Table "Results of ablation study".
 
