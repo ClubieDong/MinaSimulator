@@ -28,6 +28,31 @@ cd ..
 
 Before running the experiments, make sure the working directory is the root of this project.
 
+### [Done] Tree Conflicts
+
+For Figure "Relationship between tree conflicts and host fragments".
+
+```bash
+build/mina_sim tree-conflicts
+python scripts/visualize_tree_conflicts.py
+```
+
+### [Done] Accelerate Effectiveness
+
+For Figure "Relationship between algorithm bandwidth and duration of one training step".
+
+```bash
+build/mina_sim accelerate-effectiveness
+python scripts/visualize_accelerate_effectiveness.py
+```
+
+### [Done] Output traces
+
+```bash
+build/mina_sim output-traces
+python scripts/visualize_traces.py
+```
+
 ### Large Scale Simulation
 
 For Figure "Overall performance of MINA".
@@ -63,15 +88,6 @@ build/mina_sim tree-building
 python scripts/visualize_tree_building.py
 ```
 
-### Tree Conflicts
-
-For Figure "Relationship between tree conflicts and host fragments".
-
-```bash
-build/mina_sim tree-conflicts
-python scripts/visualize_tree_conflicts.py
-```
-
 ### Job Placement
 
 For Figure "Performance of job placement algorithm with different oversubscription ratios".
@@ -79,15 +95,6 @@ For Figure "Performance of job placement algorithm with different oversubscripti
 ```bash
 build/mina_sim job-placement
 python scripts/visualize_job_placement.py
-```
-
-### Accelerate Effectiveness
-
-For Figure "Relationship between algorithm bandwidth and duration of one training step".
-
-```bash
-build/mina_sim accelerate-effectiveness
-python scripts/visualize_accelerate_effectiveness.py
 ```
 
 ### Sharing Overhead

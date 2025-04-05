@@ -288,11 +288,6 @@ void SmartTreeBuildingPolicy::operator()(const FatTreeResource &resources,
             const auto &[groups, trees] = merge.value();
             performMerge(groups, trees);
         }
-        // std::vector<std::pair<unsigned int, MeanStdTracker>> x(m_ScoreTrackers.begin(), m_ScoreTrackers.end());
-        // std::sort(x.begin(), x.end(), [](const auto &a, const auto &b) { return a.first < b.first; });
-        // for (const auto &[k, v] : x)
-        //     std::cout << "Job count: " << k << ", count: " << v.Count() << ", mean: " << v.Mean()
-        //               << ", std: " << v.Std() << "\n";
     }
     // Set aggregation trees for each job
     for (auto &job : jobs)
@@ -310,5 +305,4 @@ void SmartTreeBuildingPolicy::operator()(const FatTreeResource &resources,
 
 // TODO: Add Tracer result to paper
 // TODO: change GPU speedup ratio and bandwidth used in all experiments
-// TODO: weighted in all algorithms (sharing, etc)
 // TODO: remove unused includes in experiment.hpp

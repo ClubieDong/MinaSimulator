@@ -59,10 +59,11 @@ inline static std::vector<std::vector<std::pair<unsigned int, unsigned int>>> Ho
 };
 
 void TestTreeConflicts();
+void TestAccelerateEffectiveness();
+void OutputTraces();
 void TestLargeScaleSimulation();
 void TestAblationStudy();
 void TestSharing();
 void TestTreeBuilding();
 void TestJobPlacement();
-void TestAccelerateEffectiveness();
 void TestSharingOverhead();

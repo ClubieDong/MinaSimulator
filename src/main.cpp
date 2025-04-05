@@ -6,7 +6,13 @@ int main(int argc, const char *argv[]) {
         return 1;
     }
     std::string name = argv[1];
-    if (name == "large-scale-simulation")
+    if (name == "tree-conflicts")
+        TestTreeConflicts();
+    else if (name == "accelerate-effectiveness")
+        TestAccelerateEffectiveness();
+    else if (name == "output-traces")
+        OutputTraces();
+    else if (name == "large-scale-simulation")
         TestLargeScaleSimulation();
     else if (name == "ablation-study")
         TestAblationStudy();
@@ -14,12 +20,8 @@ int main(int argc, const char *argv[]) {
         TestSharing();
     else if (name == "tree-building")
         TestTreeBuilding();
-    else if (name == "tree-conflicts")
-        TestTreeConflicts();
     else if (name == "job-placement")
         TestJobPlacement();
-    else if (name == "accelerate-effectiveness")
-        TestAccelerateEffectiveness();
     else if (name == "sharing-overhead")
         TestSharingOverhead();
     else {
