@@ -7,9 +7,9 @@ static SimulationResult Simulate(bool enableMina, unsigned int hostTraceId) {
         weightList.push_back(weight);
     }
     FatTree topology(16);
-    FatTreeResource resources(topology, std::nullopt, 1);
+    FatTreeResource resources(topology, 1, std::nullopt);
     auto getNextJob = [hostCountList, weightList, jobCount = 0u]() mutable -> std::unique_ptr<Job> {
-        if (jobCount >= 2000)
+        if (jobCount >= 1000)
             return nullptr;
         ++jobCount;
         thread_local std::default_random_engine engine(42);
@@ -42,8 +42,6 @@ static SimulationResult Simulate(bool enableMina, unsigned int hostTraceId) {
 void TestLargeScaleSimulation() {
     Job::CalcTransmissionDuration = DurationCaculator(12'500'000'000, 2.0, 0.000'05);
     ModelInfoProvider::GPUSpeedupRatio = 1.0;
-    // Job::CalcTransmissionDuration = DurationCaculator(25'000'000'000, 2.5, 0.000'05);
-    // ModelInfoProvider::GPUSpeedupRatio = 6.34;
     auto results = Parallel::Run<SimulationResult>( //
         [] { return Simulate(true, 0); },           //
         [] { return Simulate(false, 0); },          //

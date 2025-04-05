@@ -53,7 +53,7 @@ build/mina_sim output-traces
 python scripts/visualize_traces.py
 ```
 
-### Large Scale Simulation
+### [Done] Large Scale Simulation
 
 For Figure "Overall performance of MINA".
 
