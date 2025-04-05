@@ -7,6 +7,7 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <memory>
 #include <nlohmann/json.hpp>
 
 void to_json(nlohmann::json &json, const SimulationResult &result) {
@@ -17,6 +18,7 @@ void to_json(nlohmann::json &json, const SimulationResult &result) {
         {"SharpRatioWeighted", result.SharpRatioWeighted()},
         {"FinishedJobCount", result.FinishedJobCount},
         {"SimulatedTime", result.SimulatedTime},
+        {"EventCount", result.EventCount},
         {"ClusterUtilization", result.ClusterUtilization},
         {"SharpUtilization", result.SharpUtilization},
         {"TotalJCT", result.TotalJCT},
@@ -44,6 +46,7 @@ std::ostream &operator<<(std::ostream &os, const SimulationResult &result) {
     os << "  SharpRatioWeighted:           " << result.SharpRatioWeighted() * 100 << "%\n";
     os << "  FinishedJobCount:             " << result.FinishedJobCount << '\n';
     os << "  SimulatedTime:                " << result.SimulatedTime << " sec\n";
+    os << "  EventCount:                   " << result.EventCount << '\n';
     os << "  ClusterUtilization:           " << result.ClusterUtilization * 100 << "%\n";
     os << "  SharpUtilization:             " << result.SharpUtilization * 100 << "%\n";
     os << "  TotalJCT:                     " << result.TotalJCT << " sec\n";
@@ -231,6 +234,7 @@ SimulationResult AllocationController::RunSimulation(std::optional<double> maxSi
                 }
             RunNewJobs(result);
         }
+        ++result.EventCount;
     }
     if (showProgress)
         ShowProgress(now, true);
@@ -265,24 +269,34 @@ SimulationResult AllocationController::RunSimulation(std::optional<double> maxSi
 }
 
 SimulationResult
-AllocationController::SimulateSharingGroup(const std::vector<std::pair<unsigned int, std::string_view>> &jobList,
-                                           SharingPolicy &&sharingPolicy, double simulationTime) {
-    // jobList: a list of (hostCount, modelName)
+AllocationController::SimulateSharingGroup(const std::vector<std::pair<unsigned int, std::string_view>> &jobInfos,
+                                           SharingPolicy &&sharingPolicy, unsigned int stepCount) {
+    // Count the total number of hosts
     unsigned int totalHostCount = 0;
-    for (const auto &[hostCount, _] : jobList)
+    for (const auto &[hostCount, _] : jobInfos)
         totalHostCount += hostCount;
-    FatTree topology({totalHostCount, 1, 1}, {1, 1, 1});
-    FatTreeResource resources(topology, 1, std::nullopt);
-    auto getNextJob = [&jobList, jobCount = 0u]() mutable -> std::unique_ptr<Job> {
-        if (jobCount >= jobList.size())
+    // Build jobs and calculate the max step duration
+    std::vector<std::unique_ptr<Job>> jobs;
+    double maxStepDuration = 0.0;
+    jobs.reserve(jobInfos.size());
+    for (const auto &[hostCount, modelName] : jobInfos) {
+        auto job = std::make_unique<Job>(modelName, hostCount, std::nullopt);
+        maxStepDuration = std::max(maxStepDuration, job->StepDurationWithoutSharp);
+        jobs.push_back(std::move(job));
+    }
+    auto getNextJob = [&jobs, jobCount = 0u]() mutable -> std::unique_ptr<Job> {
+        if (jobCount >= jobs.size())
             return nullptr;
         ++jobCount;
-        auto [hostCount, modelName] = jobList[jobCount - 1];
-        return std::make_unique<Job>(modelName, hostCount, std::nullopt);
+        return std::move(jobs[jobCount - 1]);
     };
+    // Build allocation controller
+    FatTree topology({totalHostCount, 1, 1}, {1, 1, 1});
+    FatTreeResource resources(topology, 1, std::nullopt);
     FirstHostAllocationPolicy hostAllocationPolicy;
     FirstTreeBuildingPolicy treeBuildingPolicy(false);
     AllocationController controller(std::move(resources), std::move(getNextJob), std::move(hostAllocationPolicy),
                                     std::move(treeBuildingPolicy), std::move(sharingPolicy));
-    return controller.RunSimulation(simulationTime, false);
+    // Simulate
+    return controller.RunSimulation(stepCount * maxStepDuration, false);
 }

@@ -10,7 +10,7 @@ static SimulationResult Simulate(bool useSmartHostAllocationPolicy, bool useSmar
     FatTree topology(16);
     FatTreeResource resources(topology, 1, std::nullopt);
     auto getNextJob = [hostCountList, weightList, jobCount = 0u]() mutable -> std::unique_ptr<Job> {
-        if (jobCount >= 2000)
+        if (jobCount >= 1000)
             return nullptr;
         ++jobCount;
         thread_local std::default_random_engine engine(42);
@@ -44,19 +44,17 @@ static SimulationResult Simulate(bool useSmartHostAllocationPolicy, bool useSmar
 }
 
 void TestAblationStudy() {
+    Job::CalcTransmissionDuration = DurationCaculator(12'500'000'000, 2.0, 0.000'05);
+    ModelInfoProvider::GPUSpeedupRatio = 1.0;
     auto printResult = [](std::string_view name, const SimulationResult &result) {
         std::cout << name << ": ";
         std::cout << result.JCTScore() << ' ';
         std::cout << result.JCTScoreWeighted() << ' ';
         std::cout << result.SharpRatio() << ' ';
         std::cout << result.SharpRatioWeighted() << ' ';
-        std::cout << result.SharpUtilization << ' ';
-        std::cout << result.ClusterUtilization << ' ';
         std::cout << result.SharpUtilization << '\n';
     };
 
-    Job::CalcTransmissionDuration = DurationCaculator(12'500'000'000, 2.0, 0.000'05);
-    ModelInfoProvider::GPUSpeedupRatio = 1.0;
     auto results = Parallel::Run<SimulationResult>(   //
         [] { return Simulate(false, false, false); }, //
         [] { return Simulate(false, false, true); },  //
@@ -81,9 +79,4 @@ void TestAblationStudy() {
     printResult("100", results[4]);
     printResult("010", results[2]);
     printResult("001", results[1]);
-
-    // Job::CalcTransmissionDuration = DurationCaculator(12'500'000'000, 2.0, 0.000'05);
-    // ModelInfoProvider::GPUSpeedupRatio = 1.0;
-    // auto result = Simulate(true, true, true);
-    // printResult("111", result);
 }

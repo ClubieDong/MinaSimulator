@@ -177,8 +177,9 @@ double Job::GetNextCommOpPriority(const CommOpRunningInfo &commOpInfo) const {
         }
         return std::max(now, commOpInfo.GroupStartTime + opGroup.SyncTime);
     };
-    // TODO: should useSharpOnRest be true of false?
-    return calcGroupFinishTime(false, false) - calcGroupFinishTime(true, false);
+    auto nonSharp = calcGroupFinishTime(false, false);
+    auto useSharp = calcGroupFinishTime(true, false);
+    return (nonSharp - useSharp) * HostCount;
 }
 
 void Job::SetHosts(std::vector<const FatTree::Node *> &&hosts) {

@@ -11,7 +11,7 @@ void TestSharing() {
             std::vector<std::pair<unsigned int, std::string_view>> jobList = {{2, ModelList[modelIdx1]},
                                                                               {2, ModelList[modelIdx2]}};
             SmartSharingPolicy sharingPolicy;
-            auto result = AllocationController::SimulateSharingGroup(jobList, std::move(sharingPolicy), 1000);
+            auto result = AllocationController::SimulateSharingGroup(jobList, std::move(sharingPolicy), 100);
             // TODO: or weighted JCT score?
             resultMat[modelIdx1][modelIdx2] = result.JCTScore();
         }

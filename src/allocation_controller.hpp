@@ -17,6 +17,8 @@ struct SimulationResult {
     unsigned int FinishedJobCount = 0;
     // Total simulation time, in second
     double SimulatedTime = 0.0;
+    // Simulated event count;
+    unsigned int EventCount = 0;
     // The utilization of all hosts (time in use / total time)
     double ClusterUtilization = 0.0;
     // The utilization of all SHARP switches (time in use / total time)
@@ -119,6 +121,6 @@ public:
 
     SimulationResult RunSimulation(std::optional<double> maxSimulationTime, bool showProgress);
 
-    static SimulationResult SimulateSharingGroup(const std::vector<std::pair<unsigned int, std::string_view>> &jobList,
-                                                 SharingPolicy &&sharingPolicy, double simulationTime);
+    static SimulationResult SimulateSharingGroup(const std::vector<std::pair<unsigned int, std::string_view>> &jobInfos,
+                                                 SharingPolicy &&sharingPolicy, unsigned int stepCount);
 };
