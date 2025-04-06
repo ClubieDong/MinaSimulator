@@ -79,6 +79,15 @@ build/mina_sim job-placement
 python scripts/visualize_job_placement.py
 ```
 
+### [Done] Tree Building
+
+For Figure "Performance and overhead of tree building algorithm".
+
+```bash
+build/mina_sim tree-building
+python scripts/visualize_tree_building.py
+```
+
 ### INA Sharing
 
 For Figure "Sharing performance".
@@ -86,15 +95,6 @@ For Figure "Sharing performance".
 ```bash
 build/mina_sim sharing
 python scripts/visualize_sharing_policy.py
-```
-
-### Tree Building
-
-For Figure "Performance and overhead of tree building algorithm".
-
-```bash
-build/mina_sim tree-building
-python scripts/visualize_tree_building.py
 ```
 
 ### Sharing Overhead

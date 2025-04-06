@@ -18,10 +18,10 @@ int main(int argc, const char *argv[]) {
         TestAblationStudy();
     else if (name == "job-placement")
         TestJobPlacement();
-    else if (name == "sharing")
-        TestSharing();
     else if (name == "tree-building")
         TestTreeBuilding();
+    else if (name == "sharing")
+        TestSharing();
     else if (name == "sharing-overhead")
         TestSharingOverhead();
     else {

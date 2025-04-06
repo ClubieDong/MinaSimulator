@@ -9,7 +9,7 @@ static SimulationResult Simulate(std::optional<unsigned int> maxTreeCount) {
     FatTree topology(16);
     FatTreeResource resources(topology, 1, std::nullopt);
     auto getNextJob = [hostCountList, weightList, jobCount = 0u]() mutable -> std::unique_ptr<Job> {
-        if (jobCount >= 2000)
+        if (jobCount >= 1000)
             return nullptr;
         ++jobCount;
         thread_local std::default_random_engine engine(42);
@@ -33,42 +33,42 @@ static SimulationResult Simulate(std::optional<unsigned int> maxTreeCount) {
 void TestTreeBuilding() {
     Job::CalcTransmissionDuration = DurationCaculator(12'500'000'000, 2.0, 0.000'05);
     ModelInfoProvider::GPUSpeedupRatio = 1.0;
-    auto results = Parallel::Run<SimulationResult>( //
-        [] { return Simulate(1); },                 //
-        [] { return Simulate(2); },                 //
-        [] { return Simulate(3); },                 //
-        [] { return Simulate(4); },                 //
-        [] { return Simulate(5); },                 //
-        [] { return Simulate(6); },                 //
-        [] { return Simulate(7); },                 //
-        [] { return Simulate(8); },                 //
-        [] { return Simulate(9); },                 //
-        [] { return Simulate(10); },                //
-        [] { return Simulate(std::nullopt); }       //
+    // MacBook Pro M1 only has 8 CPU cores, we need to run in two batches
+    auto results1 = Parallel::Run<SimulationResult>( //
+        [] { return Simulate(1); },                  //
+        [] { return Simulate(2); },                  //
+        [] { return Simulate(3); },                  //
+        [] { return Simulate(4); },                  //
+        [] { return Simulate(5); },                  //
+        [] { return Simulate(6); }                   //
     );
+    auto results2 = Parallel::Run<SimulationResult>( //
+        [] { return Simulate(7); },                  //
+        [] { return Simulate(8); },                  //
+        [] { return Simulate(9); },                  //
+        [] { return Simulate(10); },                 //
+        [] { return Simulate(std::nullopt); }        //
+    );
+    std::vector<SimulationResult> results;
+    results.reserve(results1.size() + results2.size());
+    results.insert(results.end(), results1.begin(), results1.end());
+    results.insert(results.end(), results2.begin(), results2.end());
     nlohmann::json jsonResult;
     std::cout << std::setprecision(6) << std::fixed;
     for (unsigned int idx = 0; idx < results.size(); ++idx) {
         const auto &res = results[idx];
         auto timeCostHostAllocation = res.TimeCostHostAllocation / res.FinishedJobCount;
         auto timeCostTreeBuilding = res.TimeCostTreeBuilding / res.FinishedJobCount;
-        // TODO: or weighted JCT score?
-        std::cout << "MaxTreeCount=" << idx + 1 << ":\n";
-        std::cout << "  HostAllocation: " << timeCostHostAllocation << "ms ";
-        std::cout << "  TreeBuilding: " << timeCostTreeBuilding << "ms ";
-        std::cout << "  JCTScore: " << res.JCTScore() << ' ';
-        std::cout << "  SharpRatio: " << res.SharpRatio() << '\n';
-        std::cout << "  TreeMigrationCount: " << res.TreeMigrationCount << '\n';
-        jsonResult.push_back({
-            {"MaxTreeCount", idx + 1},
-            {"TimeCostHostAllocation", timeCostHostAllocation},
-            {"TimeCostTreeBuilding", timeCostTreeBuilding},
-            {"JCTScore", res.JCTScore()},
-            {"SharpRatio", res.SharpRatio()},
-            {"TreeMigrationCount", res.TreeMigrationCount},
-        });
+        std::cout << "==========================\n";
+        std::cout << "MaxTreeCount = " << (idx == results.size() - 1 ? "All" : std::to_string(idx + 1)) << ":\n";
+        std::cout << "  Host allocation time per job: " << timeCostHostAllocation << "ms\n";
+        std::cout << "  Tree building time per job: " << timeCostTreeBuilding << "ms\n";
+        std::cout << "  Tree migration count=" << res.TreeMigrationCount << '\n';
+        std::cout << "  JCTScoreWeighted=" << res.JCTScoreWeighted() << '\n';
+        std::cout << "  SharpRatioWeighted=" << res.SharpRatioWeighted() << '\n';
+        std::cout << "  SharpUtilization=" << res.SharpUtilization * 100 << "%\n";
+        jsonResult.push_back(res);
     }
-    jsonResult[jsonResult.size() - 1]["MaxTreeCount"] = "All";
     std::ofstream file("results/tree_building.json");
     file << jsonResult;
 }
