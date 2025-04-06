@@ -88,7 +88,7 @@ build/mina_sim tree-building
 python scripts/visualize_tree_building.py
 ```
 
-### INA Sharing
+### [Done] INA Resource Sharing
 
 For Figure "Sharing performance".
 
