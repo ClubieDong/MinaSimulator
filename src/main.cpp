@@ -16,12 +16,12 @@ int main(int argc, const char *argv[]) {
         TestLargeScaleSimulation();
     else if (name == "ablation-study")
         TestAblationStudy();
+    else if (name == "job-placement")
+        TestJobPlacement();
     else if (name == "sharing")
         TestSharing();
     else if (name == "tree-building")
         TestTreeBuilding();
-    else if (name == "job-placement")
-        TestJobPlacement();
     else if (name == "sharing-overhead")
         TestSharingOverhead();
     else {

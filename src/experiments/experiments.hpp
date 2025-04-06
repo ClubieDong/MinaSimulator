@@ -63,7 +63,7 @@ void TestAccelerateEffectiveness();
 void OutputTraces();
 void TestLargeScaleSimulation();
 void TestAblationStudy();
+void TestJobPlacement();
 void TestSharing();
 void TestTreeBuilding();
-void TestJobPlacement();
 void TestSharingOverhead();

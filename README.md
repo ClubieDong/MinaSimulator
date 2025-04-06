@@ -70,6 +70,15 @@ For Table "Results of ablation study".
 build/mina_sim ablation-study
 ```
 
+### [Done] Job Placement
+
+For Figure "Performance of job placement algorithm with different oversubscription ratios".
+
+```bash
+build/mina_sim job-placement
+python scripts/visualize_job_placement.py
+```
+
 ### INA Sharing
 
 For Figure "Sharing performance".
@@ -86,15 +95,6 @@ For Figure "Performance and overhead of tree building algorithm".
 ```bash
 build/mina_sim tree-building
 python scripts/visualize_tree_building.py
-```
-
-### Job Placement
-
-For Figure "Performance of job placement algorithm with different oversubscription ratios".
-
-```bash
-build/mina_sim job-placement
-python scripts/visualize_job_placement.py
 ```
 
 ### Sharing Overhead

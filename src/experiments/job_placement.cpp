@@ -1,15 +1,14 @@
 #include "experiments.hpp"
 
-static SimulationResult Simulate(const FatTree &topology,
-                                 AllocationController::HostAllocationPolicy &&hostAllocationPolicy) {
+static SimulationResult Simulate(const FatTree &topology, bool enableMina) {
     std::vector<unsigned int> hostCountList, weightList;
     for (auto [hostCount, weight] : HostCountTraces[0]) {
         hostCountList.push_back(hostCount);
         weightList.push_back(weight);
     }
-    FatTreeResource resources(topology, std::nullopt, 1);
+    FatTreeResource resources(topology, 1, std::nullopt);
     auto getNextJob = [hostCountList, weightList, jobCount = 0u]() mutable -> std::unique_ptr<Job> {
-        if (jobCount >= 2000)
+        if (jobCount >= 1000)
             return nullptr;
         ++jobCount;
         thread_local std::default_random_engine engine(42);
@@ -22,7 +21,12 @@ static SimulationResult Simulate(const FatTree &topology,
         auto stepCount = stepCountList[randomStepCount(engine)];
         return std::make_unique<Job>(model, hostCount, stepCount);
     };
-    SmartTreeBuildingPolicy treeBuildingPolicy(5);
+    AllocationController::HostAllocationPolicy hostAllocationPolicy;
+    if (enableMina)
+        hostAllocationPolicy = SmartHostAllocationPolicy(0.5);
+    else
+        hostAllocationPolicy = FirstHostAllocationPolicy();
+    FirstTreeBuildingPolicy treeBuildingPolicy(true);
     GreedySharingPolicy sharingPolicy;
     AllocationController controller(std::move(resources), std::move(getNextJob), std::move(hostAllocationPolicy),
                                     std::move(treeBuildingPolicy), std::move(sharingPolicy));
@@ -32,46 +36,52 @@ static SimulationResult Simulate(const FatTree &topology,
 void TestJobPlacement() {
     Job::CalcTransmissionDuration = DurationCaculator(12'500'000'000, 2.0, 0.000'05);
     ModelInfoProvider::GPUSpeedupRatio = 1.0;
-    std::array ft = {
-        FatTree({8, 8, 16}, {1, 1, 1}), FatTree({8, 8, 16}, {1, 2, 2}), FatTree({8, 8, 16}, {1, 3, 3}),
-        FatTree({8, 8, 16}, {1, 4, 4}), FatTree({8, 8, 16}, {1, 5, 5}), FatTree({8, 8, 16}, {1, 6, 6}),
-        FatTree({8, 8, 16}, {1, 7, 7}), FatTree({8, 8, 16}, {1, 8, 8}),
-    };
-    auto results = Parallel::Run<SimulationResult>([&ft] { return Simulate(ft[0], RandomHostAllocationPolicy()); },
-                                                   [&ft] { return Simulate(ft[0], FirstHostAllocationPolicy()); },
-                                                   [&ft] { return Simulate(ft[0], SmartHostAllocationPolicy(0.5)); },
-                                                   [&ft] { return Simulate(ft[1], RandomHostAllocationPolicy()); },
-                                                   [&ft] { return Simulate(ft[1], FirstHostAllocationPolicy()); },
-                                                   [&ft] { return Simulate(ft[1], SmartHostAllocationPolicy(0.5)); },
-                                                   [&ft] { return Simulate(ft[2], RandomHostAllocationPolicy()); },
-                                                   [&ft] { return Simulate(ft[2], FirstHostAllocationPolicy()); },
-                                                   [&ft] { return Simulate(ft[2], SmartHostAllocationPolicy(0.5)); },
-                                                   [&ft] { return Simulate(ft[3], RandomHostAllocationPolicy()); },
-                                                   [&ft] { return Simulate(ft[3], FirstHostAllocationPolicy()); },
-                                                   [&ft] { return Simulate(ft[3], SmartHostAllocationPolicy(0.5)); },
-                                                   [&ft] { return Simulate(ft[4], RandomHostAllocationPolicy()); },
-                                                   [&ft] { return Simulate(ft[4], FirstHostAllocationPolicy()); },
-                                                   [&ft] { return Simulate(ft[4], SmartHostAllocationPolicy(0.5)); },
-                                                   [&ft] { return Simulate(ft[5], RandomHostAllocationPolicy()); },
-                                                   [&ft] { return Simulate(ft[5], FirstHostAllocationPolicy()); },
-                                                   [&ft] { return Simulate(ft[5], SmartHostAllocationPolicy(0.5)); },
-                                                   [&ft] { return Simulate(ft[6], RandomHostAllocationPolicy()); },
-                                                   [&ft] { return Simulate(ft[6], FirstHostAllocationPolicy()); },
-                                                   [&ft] { return Simulate(ft[6], SmartHostAllocationPolicy(0.5)); },
-                                                   [&ft] { return Simulate(ft[7], RandomHostAllocationPolicy()); },
-                                                   [&ft] { return Simulate(ft[7], FirstHostAllocationPolicy()); },
-                                                   [&ft] { return Simulate(ft[7], SmartHostAllocationPolicy(0.5)); });
-    std::cout << std::setprecision(3) << std::fixed;
-    nlohmann::json jsonResult;
+
+    auto resultMina = Parallel::RunRanks<SimulationResult>(
+        [](unsigned int rank) {
+            FatTree tree({8, 8, 16}, {1, rank / 8 + 1, rank % 8 + 1});
+            return Simulate(tree, true);
+        },
+        64);
+    auto resultBaseline = Parallel::RunRanks<SimulationResult>(
+        [](unsigned int rank) {
+            FatTree tree({8, 8, 16}, {1, rank / 8 + 1, rank % 8 + 1});
+            return Simulate(tree, false);
+        },
+        64);
+
+    std::ofstream file("results/job_placement.json");
+    file << nlohmann::json({
+        {"mina", resultMina},
+        {"baseline", resultBaseline},
+    });
+
+    std::cout << std::setprecision(4) << std::fixed;
+    std::cout << "========= MINA JCTScore =========\n";
     for (unsigned int i = 0; i < 8; ++i) {
-        // TODO: or weighted JCT score?
-        std::array res = {results[i * 3 + 0].JCTScore(), results[i * 3 + 1].JCTScore(), results[i * 3 + 2].JCTScore()};
-        jsonResult.push_back(res);
-        std::cout << "Ratio=8:" << i + 1 << ": ";
-        for (auto j : res)
-            std::cout << j << ' ';
+        for (unsigned int j = 0; j < 8; ++j)
+            std::cout << resultMina[i * 8 + j].JCTScoreWeighted() << ' ';
         std::cout << '\n';
     }
-    std::ofstream file("results/job_placement.json");
-    file << jsonResult;
+    std::cout << '\n';
+    std::cout << "========= Baseline JCTScore =========\n";
+    for (unsigned int i = 0; i < 8; ++i) {
+        for (unsigned int j = 0; j < 8; ++j)
+            std::cout << resultBaseline[i * 8 + j].JCTScoreWeighted() << ' ';
+        std::cout << '\n';
+    }
+    std::cout << '\n';
+    std::cout << "========= MINA SharpRatio =========\n";
+    for (unsigned int i = 0; i < 8; ++i) {
+        for (unsigned int j = 0; j < 8; ++j)
+            std::cout << resultMina[i * 8 + j].SharpRatioWeighted() << ' ';
+        std::cout << '\n';
+    }
+    std::cout << '\n';
+    std::cout << "========= Baseline SharpRatio =========\n";
+    for (unsigned int i = 0; i < 8; ++i) {
+        for (unsigned int j = 0; j < 8; ++j)
+            std::cout << resultBaseline[i * 8 + j].SharpRatioWeighted() << ' ';
+        std::cout << '\n';
+    }
 }
