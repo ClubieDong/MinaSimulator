@@ -12,7 +12,7 @@ void TestSharingOverhead() {
     FatTree topology(16);
     FatTreeResource resources(topology, std::nullopt, 1);
     auto getNextJob = [hostCountList, weightList, jobCount = 0u]() mutable -> std::unique_ptr<Job> {
-        if (jobCount >= 2000)
+        if (jobCount >= 1000)
             return nullptr;
         ++jobCount;
         thread_local std::default_random_engine engine(42);
@@ -31,7 +31,9 @@ void TestSharingOverhead() {
     AllocationController controller(std::move(resources), std::move(getNextJob), std::move(hostAllocationPolicy),
                                     std::move(treeBuildingPolicy), std::move(sharingPolicy));
     auto result = controller.RunSimulation(std::nullopt, true);
-    std::cout << result.ConsensusFrequency << '\n';
-    std::cout << SharingGroup::SharingPolicyCallCount << '\n';
-    std::cout << SharingGroup::SharingPolicyOverhead << '\n';
+    auto sharingPolicyOverhead =
+        static_cast<double>(SharingGroup::SharingPolicyOverhead) / SharingGroup::SharingPolicyCallCount / 1000.0;
+    std::cout << "ConsensusFrequency: " << result.ConsensusFrequency << " times per second\n";
+    std::cout << "SharingPolicyCallCount: " << SharingGroup::SharingPolicyCallCount << '\n';
+    std::cout << "SharingPolicyOverhead: " << sharingPolicyOverhead << " microseconds\n";
 }

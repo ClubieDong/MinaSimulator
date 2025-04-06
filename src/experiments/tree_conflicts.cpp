@@ -1,6 +1,7 @@
 #include "experiments.hpp"
 
 void TestTreeConflicts() {
+    // This is different than default settings
     Job::CalcTransmissionDuration = DurationCaculator(2'000'000'000, 1.0, 0.000'05);
     ModelInfoProvider::GPUSpeedupRatio = 1.0;
     FatTree topology(16);

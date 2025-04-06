@@ -3,6 +3,7 @@
 static constexpr unsigned int StepCount = 100;
 
 void TestSharing() {
+    // This is different than default settings
     Job::CalcTransmissionDuration = DurationCaculator(12'500'000'000, 1.5, 0.000'05);
     ModelInfoProvider::GPUSpeedupRatio = 1.5;
     unsigned int modelCount = ModelList.size();

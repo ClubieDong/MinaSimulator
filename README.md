@@ -97,7 +97,7 @@ build/mina_sim sharing
 python scripts/visualize_sharing_policy.py
 ```
 
-### Sharing Overhead
+### [Done] Sharing Overhead
 
 For "Overhead of host coordination" in Section 6.4 "Overhead Measurement".
 
