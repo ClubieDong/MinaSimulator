@@ -39,16 +39,16 @@ void TestJobPlacement() {
 
     auto resultMina = Parallel::RunRanks<SimulationResult>(
         [](unsigned int rank) {
-            FatTree tree({8, 8, 16}, {1, rank / 8 + 1, rank % 8 + 1});
+            FatTree tree({8, 8, 16}, {1, rank + 1, rank + 1});
             return Simulate(tree, true);
         },
-        64);
+        8);
     auto resultBaseline = Parallel::RunRanks<SimulationResult>(
         [](unsigned int rank) {
-            FatTree tree({8, 8, 16}, {1, rank / 8 + 1, rank % 8 + 1});
+            FatTree tree({8, 8, 16}, {1, rank + 1, rank + 1});
             return Simulate(tree, false);
         },
-        64);
+        8);
 
     std::ofstream file("results/job_placement.json");
     file << nlohmann::json({
@@ -58,30 +58,20 @@ void TestJobPlacement() {
 
     std::cout << std::setprecision(4) << std::fixed;
     std::cout << "========= MINA JCTScore =========\n";
-    for (unsigned int i = 0; i < 8; ++i) {
-        for (unsigned int j = 0; j < 8; ++j)
-            std::cout << resultMina[i * 8 + j].JCTScoreWeighted() << ' ';
-        std::cout << '\n';
-    }
+    for (auto res : resultMina)
+        std::cout << res.JCTScoreWeighted() << ' ';
     std::cout << '\n';
     std::cout << "========= Baseline JCTScore =========\n";
-    for (unsigned int i = 0; i < 8; ++i) {
-        for (unsigned int j = 0; j < 8; ++j)
-            std::cout << resultBaseline[i * 8 + j].JCTScoreWeighted() << ' ';
-        std::cout << '\n';
-    }
+    for (auto res : resultBaseline)
+        std::cout << res.JCTScoreWeighted() << ' ';
     std::cout << '\n';
+    std::cout << std::setprecision(4) << std::fixed;
     std::cout << "========= MINA SharpRatio =========\n";
-    for (unsigned int i = 0; i < 8; ++i) {
-        for (unsigned int j = 0; j < 8; ++j)
-            std::cout << resultMina[i * 8 + j].SharpRatioWeighted() << ' ';
-        std::cout << '\n';
-    }
+    for (auto res : resultMina)
+        std::cout << res.SharpRatioWeighted() << ' ';
     std::cout << '\n';
     std::cout << "========= Baseline SharpRatio =========\n";
-    for (unsigned int i = 0; i < 8; ++i) {
-        for (unsigned int j = 0; j < 8; ++j)
-            std::cout << resultBaseline[i * 8 + j].SharpRatioWeighted() << ' ';
-        std::cout << '\n';
-    }
+    for (auto res : resultBaseline)
+        std::cout << res.SharpRatioWeighted() << ' ';
+    std::cout << '\n';
 }
