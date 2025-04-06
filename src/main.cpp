@@ -24,6 +24,8 @@ int main(int argc, const char *argv[]) {
         TestSharing();
     else if (name == "sharing-overhead")
         TestSharingOverhead();
+    else if (name == "record-cluster-state")
+        RecordClusterState();
     else {
         std::cerr << "Unknown experiment name!\n";
         return 1;

@@ -119,6 +119,16 @@ void AllocationController::RunNewJobs(SimulationResult &result) {
         newJobs.push_back(m_NextJob.get());
         m_RunningJobs.push_back(std::move(m_NextJob));
         ++m_AllocatedJobCount;
+        if (RecordClusterState.has_value() && RecordClusterState.value() == m_AllocatedJobCount) {
+            std::vector<std::vector<unsigned int>> clusterState;
+            for (const auto &job : m_RunningJobs) {
+                clusterState.emplace_back();
+                for (const auto &node : job->GetHosts())
+                    clusterState.back().push_back(node->ID);
+            }
+            std::ofstream file(ClusterStateOutputFile);
+            file << nlohmann::json(clusterState);
+        }
         m_NextJob = m_GetNextJob();
     }
     auto start = std::chrono::high_resolution_clock::now();

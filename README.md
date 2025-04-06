@@ -104,3 +104,10 @@ For "Overhead of host coordination" in Section 6.4 "Overhead Measurement".
 ```bash
 build/mina_sim sharing-overhead
 ```
+
+### [Done] Record cluster state
+
+```bash
+build/mina_sim record-cluster-state
+python scripts/visualize_cluster_state.py
+```

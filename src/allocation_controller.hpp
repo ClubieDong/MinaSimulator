@@ -113,6 +113,8 @@ private:
 
 public:
     bool RecordTreeConflicts = false;
+    std::optional<unsigned int> RecordClusterState = std::nullopt;
+    std::string ClusterStateOutputFile;
 
     explicit AllocationController(FatTreeResource &&resources, decltype(m_GetNextJob) &&getNextJob,
                                   HostAllocationPolicy &&hostAllocationPolicy, TreeBuildingPolicy &&treeBuildingPolicy,

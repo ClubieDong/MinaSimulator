@@ -67,3 +67,4 @@ void TestJobPlacement();
 void TestTreeBuilding();
 void TestSharing();
 void TestSharingOverhead();
+void RecordClusterState();
