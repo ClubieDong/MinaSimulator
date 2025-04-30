@@ -3,7 +3,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 file_path = "results/job_placement.json"
-figure_path = "figures/job-placement.pdf"
+figure_path = "figures/job_placement.pdf"
 
 with open(file_path, "r") as f:
     data = json.load(f)
@@ -18,7 +18,7 @@ sharp_ratio_baseline = np.array([result_baseline[i]["SharpRatioWeighted"] for i 
 x_range = np.arange(8)
 bar_width = 0.35
 
-plt.rcParams["font.family"] = ["Times New Roman", "SimSong"]
+plt.rcParams["font.family"] = ["Times New Roman", "SimSun"]
 plt.rcParams["font.size"] = 12
 plt.rcParams["pdf.fonttype"] = 42
 plt.rcParams["ps.fonttype"] = 42

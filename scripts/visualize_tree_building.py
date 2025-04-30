@@ -2,7 +2,7 @@ import json
 from matplotlib import pyplot as plt
 
 file_path = "results/tree_building.json"
-figure_path = "figures/tree-building.pdf"
+figure_path = "figures/tree_building.pdf"
 
 with open(file_path, "r") as f:
     data = json.load(f)
@@ -14,7 +14,7 @@ max_tree_count[-1] = "全部"
 x_range = list(range(len(max_tree_count)))
 x_range[-1] += 0.5
 
-plt.rcParams["font.family"] = ["Times New Roman", "SimSong"]
+plt.rcParams["font.family"] = ["Times New Roman", "SimSun"]
 plt.rcParams["font.size"] = 12
 plt.rcParams["pdf.fonttype"] = 42
 plt.rcParams["ps.fonttype"] = 42

@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 
-plt.rcParams["font.family"] = ["Times New Roman", "SimSong"]
+plt.rcParams["font.family"] = ["Times New Roman", "SimSun"]
 plt.rcParams["font.size"] = 12
 plt.rcParams["pdf.fonttype"] = 42
 plt.rcParams["ps.fonttype"] = 42

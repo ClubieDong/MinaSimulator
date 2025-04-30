@@ -32,7 +32,7 @@ print(f"2 jobs >=0.95: {sum(1 for x in res_2_jobs if x >= 0.95)}")
 
 mat_2_jobs = [[res_2_jobs[i * len(model_list) + j] for j in range(len(model_list))] for i in range(len(model_list))]
 
-plt.rcParams["font.family"] = ["Times New Roman", "SimSong"]
+plt.rcParams["font.family"] = ["Times New Roman", "SimSun"]
 plt.rcParams["font.size"] = 12
 plt.rcParams["pdf.fonttype"] = 42
 plt.rcParams["ps.fonttype"] = 42

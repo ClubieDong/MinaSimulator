@@ -16,7 +16,7 @@ series = data[model_path]
 bandwidth = [x[0]/1e9 for x in series if min_bandwidth <= x[0] <= max_bandwidth]
 jct = [x[1] for x in series if min_bandwidth <= x[0] <= max_bandwidth]
 
-plt.rcParams["font.family"] = ["Times New Roman", "SimSong"]
+plt.rcParams["font.family"] = ["Times New Roman", "SimSun"]
 plt.rcParams["font.size"] = 12
 plt.rcParams["pdf.fonttype"] = 42
 plt.rcParams["ps.fonttype"] = 42

@@ -6,7 +6,7 @@ from scipy import stats
 from matplotlib import pyplot as plt
 
 file_path = "results/tree_conflict_trace.json"
-figure_path = "figures/conflicts-vs-fragments.pdf"
+figure_path = "figures/conflicts_vs_fragments.pdf"
 sliding_window_size = 500
 
 with open(file_path, "r") as f:
@@ -37,7 +37,7 @@ tree_conflicts = tree_conflicts[:3500]
 pearson_r, pearson_p = stats.pearsonr(total_frags, tree_conflicts)
 print(f"Pearson correlation: {pearson_r}, p-value: {pearson_p}")
 
-plt.rcParams["font.family"] = ["Times New Roman", "SimSong"]
+plt.rcParams["font.family"] = ["Times New Roman", "SimSun"]
 plt.rcParams["font.size"] = 12
 plt.rcParams["pdf.fonttype"] = 42
 plt.rcParams["ps.fonttype"] = 42

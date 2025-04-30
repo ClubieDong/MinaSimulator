@@ -3,7 +3,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 file_path = "results/large_scale_simulation.json"
-figure_path = "figures/overall-performance.pdf"
+figure_path = "figures/overall_performance.pdf"
 
 with open(file_path, "r") as f:
     data = json.load(f)
@@ -16,7 +16,7 @@ baseline_sharp_ratio = np.array([data[i*2+1]["SharpRatioWeighted"] for i in rang
 index = np.arange(10)
 bar_width = 0.35
 
-plt.rcParams["font.family"] = ["Times New Roman", "SimSong"]
+plt.rcParams["font.family"] = ["Times New Roman", "SimSun"]
 plt.rcParams["font.size"] = 12
 plt.rcParams["pdf.fonttype"] = 42
 plt.rcParams["ps.fonttype"] = 42
