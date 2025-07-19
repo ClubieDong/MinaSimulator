@@ -1,6 +1,9 @@
 # MINA: Fine-grained In-network Aggregation Resource Scheduling for Machine Learning Service
 
-This is the official repository to reproduce the simulation results of the paper "MINA: Fine-grained In-network Aggregation Resource Scheduling for Machine Learning Service" (accepted by INFOCOM 2025, to be published).
+> [!NOTE]
+> This branch is the version for the INFOCOM 2025 paper. Please refer to the [`ToN`](https://github.com/ClubieDong/MinaSimulator/tree/ToN) branch for the latest version of this codebase.
+
+This is the official repository to reproduce the simulation results of the paper "MINA: Fine-grained In-network Aggregation Resource Scheduling for Machine Learning Service" (accepted by INFOCOM 2025 [[link](https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=11044657)]; submitted to ToN 2025).
 
 ## Setup environment
 
