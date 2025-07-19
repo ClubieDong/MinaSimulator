@@ -22,8 +22,8 @@ plt.rcParams["pdf.fonttype"] = 42
 plt.rcParams["ps.fonttype"] = 42
 fig, ax = plt.subplots(figsize=(6,3))
 ax.plot(bandwidth, jct, label=model_name, color=(40/255,120/255,181/255), zorder=2)
-ax.set_xlabel("通信带宽 (GB/s)")
-ax.set_ylabel("训练批次时长 (s)")
+ax.set_xlabel("Aggregation bandwidth (GB/s)")
+ax.set_ylabel("Iteration duration (s)")
 ax.legend()
 
 plt.tight_layout(pad=0.5)

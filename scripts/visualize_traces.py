@@ -37,8 +37,8 @@ plt.errorbar(
     color=(40/255,120/255,181/255),
     capsize=3,
 )
-plt.xlabel("采集数据编号")
-plt.ylabel("平均任务规模")
+plt.xlabel("Trace ID")
+plt.ylabel("Average Job Size")
 plt.xticks([i + 1 for i in range(len(traces))])
 plt.tight_layout(pad=0.5)
 plt.savefig(figure_path, dpi=400)

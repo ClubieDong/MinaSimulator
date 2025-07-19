@@ -23,7 +23,7 @@ new_cmap = ListedColormap(colors)
 axs[0].matshow(state, cmap=new_cmap)
 axs[0].set_xticks([])
 axs[0].set_yticks([])
-axs[0].set_title("基准方法")
+axs[0].set_title("Baseline")
 
 with open("results/cluster_state_mina.json", "r") as f:
     data = json.load(f)
