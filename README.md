@@ -1,6 +1,6 @@
 # MINA: Fine-grained In-network Aggregation Resource Scheduling for Machine Learning Service
 
-This is the official repository to reproduce the simulation results of the paper "MINA: Fine-grained In-network Aggregation Resource Scheduling for Machine Learning Service" (accepted by INFOCOM 2025, to be published).
+This is the official repository to reproduce the simulation results of the paper "MINA: Fine-grained In-network Aggregation Resource Scheduling for Machine Learning Service" (accepted by INFOCOM 2025 [[link](https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=11044657)]; submitted to ToN 2025).
 
 ## Setup environment
 
@@ -28,7 +28,7 @@ cd ..
 
 Before running the experiments, make sure the working directory is the root of this project.
 
-### [Done] Tree Conflicts
+### Tree Conflicts
 
 For Figure "Relationship between tree conflicts and host fragments".
 
@@ -37,7 +37,7 @@ build/mina_sim tree-conflicts
 python scripts/visualize_tree_conflicts.py
 ```
 
-### [Done] Accelerate Effectiveness
+### Accelerate Effectiveness
 
 For Figure "Relationship between algorithm bandwidth and duration of one training step".
 
@@ -46,14 +46,14 @@ build/mina_sim accelerate-effectiveness
 python scripts/visualize_accelerate_effectiveness.py
 ```
 
-### [Done] Output traces
+### Output traces
 
 ```bash
 build/mina_sim output-traces
 python scripts/visualize_traces.py
 ```
 
-### [Done] Large Scale Simulation
+### Large Scale Simulation
 
 For Figure "Overall performance of MINA".
 
@@ -62,7 +62,7 @@ build/mina_sim large-scale-simulation
 python scripts/visualize_large_scale_simulation.py
 ```
 
-### [Done] Ablation Study
+### Ablation Study
 
 For Table "Results of ablation study".
 
@@ -70,7 +70,7 @@ For Table "Results of ablation study".
 build/mina_sim ablation-study
 ```
 
-### [Done] Job Placement
+### Job Placement
 
 For Figure "Performance of job placement algorithm with different oversubscription ratios".
 
@@ -79,7 +79,7 @@ build/mina_sim job-placement
 python scripts/visualize_job_placement.py
 ```
 
-### [Done] Tree Building
+### Tree Building
 
 For Figure "Performance and overhead of tree building algorithm".
 
@@ -88,7 +88,7 @@ build/mina_sim tree-building
 python scripts/visualize_tree_building.py
 ```
 
-### [Done] INA Resource Sharing
+### INA Resource Sharing
 
 For Figure "Sharing performance".
 
@@ -97,7 +97,7 @@ build/mina_sim sharing
 python scripts/visualize_sharing_policy.py
 ```
 
-### [Done] Sharing Overhead
+### Sharing Overhead
 
 For "Overhead of host coordination" in Section 6.4 "Overhead Measurement".
 
@@ -105,7 +105,7 @@ For "Overhead of host coordination" in Section 6.4 "Overhead Measurement".
 build/mina_sim sharing-overhead
 ```
 
-### [Done] Record cluster state
+### Record cluster state
 
 ```bash
 build/mina_sim record-cluster-state
